@@ -1,0 +1,84 @@
+# Oban Training Outline
+
+## Overview
+
+👋 Welcome to Oban Training!
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Prerequisites
+
+* Install [Elixir](https://elixir-lang.org/install.html) (1.14+ recommended)
+* Install [Livebook](https://github.com/livebook-dev/livebook) (0.9+ recommended)
+* Install [Postgres](https://www.postgresql.org/download/) (14+ recommended)
+
+## Sections
+
+### 00—Why Oban?
+
+* Where we convince you that using Oban is a good idea
+* Not really. It's where we'll give a high level overview of the architecture
+* Terminology, how things work
+
+[📓 Open Notebook](/introduction.livemd)
+
+### 01—Setup
+
+* Installing Oban into an application
+* Running migrations
+* Configuring for tests
+* Verifying Oban is running and configured properly
+
+[📓 Open Notebook](/introduction.livemd)
+
+### 02—Sign Up
+
+* Creating worker modules
+* Enqueueing jobs
+* Scheduling jobs to run in the future
+* Asserting jobs are enqueued in tests
+
+[📓 Open Notebook](/introduction.livemd)
+
+### 03—Place an Order
+
+* Controlling worker behaviour with return values
+* Managing retry backoff
+* Testing worker functionality
+
+[📓 Open Notebook](/introduction.livemd)
+
+### 04—Refund an Order
+
+* Cancelling and retrying jobs
+* Ensuring uniqueness
+* Replacing fields on unique conflicts
+* Draining queues for integration testing
+
+[📓 Open Notebook](/introduction.livemd)
+
+### 05—Delivering a Daily Digest
+
+* Running jobs on a schedule
+* Managing multiple queues and concurrency
+* Pausing and resuming queues
+* Validating configuration changes
+
+[📓 Open Notebook](/introduction.livemd)
+
+### 06—Backfilling Reviews
+
+* Deprioritizing jobs
+* Inserting multiple jobs at once
+* Recursively enqueuing jobs
+* Asserting the content of all enqueued jobs
+
+### 07—Ready for Production
+
+* Logging and instrumenting with Telemetry
+* Pruning older jobs
+* Rescuing unexpectedly stopped jobs
+* Reporting errors
+* Troubleshooting
+
+[📓 Open Notebook](/introduction.livemd)
