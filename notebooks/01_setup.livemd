@@ -1,0 +1,158 @@
+# Oban Training—Up and Running
+
+```elixir
+Mix.install([:kino, :oban, :postgrex])
+```
+
+## Installation
+
+Typically, you'd [install Oban into your application](https://hexdocs.pm/oban/installation.html) by adding the package to your `deps`, adding some configuration, and generating a few migrations. Since this is LiveBook and not an application, we've already setup the `:oban` package and we'll skip straight to some simple configuration after some minimial setup.
+
+## Migrations
+
+Oban requires a Postgres (or SQlite) and a functional `Ecto.Repo`. For now, we'll define a basic repo with minimal configuration:
+
+```elixir
+Application.put_env(:myapp, MyApp.Repo, url: "postgres://localhost:5432/chow_mojo_dev")
+
+defmodule MyApp.Repo do
+  use Ecto.Repo, adapter: Ecto.Adapters.Postgres, otp_app: :myapp
+end
+```
+
+Now we're ready to define a database migration that will create the various tables and indexes Oban requires to operate. Find the section on migrations in Oban's [installation guide](https://hexdocs.pm/oban/installation.html) and fill in `up/0` and `down/0` functions in the following migration:
+
+<details>
+  <summary>Hint</summary>
+  Call the `Oban.Migration.up/1` and `Oban.Migration.down/1` functions. Using an explicit version like `version: 11` is optional.
+</details>
+
+```elixir
+defmodule MyApp.Repo.Migrations.AddOban do
+  use Ecto.Migration
+
+  # Your turn...
+end
+```
+
+Without the convenience of running `mix ecto.migrate`, we'll handle creating the database and running migrations manually.
+
+```elixir
+alias MyApp.Repo
+
+Repo.__adapter__().storage_down(Repo.config())
+Repo.__adapter__().storage_up(Repo.config())
+
+MyApp.Repo.start_link()
+
+Ecto.Migrator.run(Repo, [{0, MyApp.Repo.Migrations.AddOban}], :up, all: true)
+```
+
+Scroll through the migration output and note that there are tables, indexes, and other database entities created and destroyed. We'll learn more about those tables and how they operate in future lessons. For now, let's verify that everything can run properly.
+
+## Configuration
+
+To verify everything is working we'll [start an Oban instance](https://hexdocs.pm/oban/Oban.html#start_link/1) with the absolute minimum configuration, the `repo` and a single `default` queue.
+
+<details>
+  <summary>Hint</summary>
+  Set `start_opts` to `repo: MyApp.Repo` and `queues: [default: 10]`.
+</details>
+
+```elixir
+# Your turn...
+start_opts =
+  case Oban.start_link(start_opts) do
+    {:ok, pid} ->
+      pid
+
+    {:error, {:already_started, pid}} ->
+      pid
+  end
+```
+
+With a running Oban instance we have something to poke at. Start by seeing if the process is alive and fetching its configuration using [Oban.config/0,1](https://hexdocs.pm/oban/Oban.html#config/1):
+
+```elixir
+Oban.config()
+```
+
+The `Oban.Config` struct has ample fields that we'll ignore for now. The important thing is that the Oban instance is running and some config was found.
+
+Now we'll use [Oban.check_queue/1](https://hexdocs.pm/oban/Oban.html#check_queue/2) to verify that the `default` queue you configured is alive as well:
+
+<details>
+  <summary>Hint</summary>
+  Call `Oban.check_queue(queue: :default)`
+</details>
+
+```elixir
+# Your turn ...
+```
+
+The output from `check_queue/1` shows diagnostics from the queue including how long it has been running, whether it is paused, the node it is running on, and which jobs its running. Note that the `running` list is empty—because we haven't created any workers or inserted any jobs!
+
+## Running Jobs
+
+Running a "job" requires a worker module and a queue to pull it out of the database and execute it. We've already started a `default` queue, which leaves the task of defining a worker module.
+
+Any module that implements the [Oban.Worker](https://hexdocs.pm/oban/Oban.Worker.html#content) behaviour can be used as a job. Usually you'll `use Oban.Worker` to define a worker rather than implementing the behaviour directly.
+
+[Define a worker](https://hexdocs.pm/oban/Oban.Worker.html#module-defining-workers) named `MyApp.InspectWorker` that uses `IO.inspect/1` to print the `job` argument:
+
+<details>
+  <summary>Hint</summary>
+  Define a `perform/1` function that uses `IO.inspect(job, label: "Running Job")`
+</details>
+
+```elixir
+defmodule MyApp.InspectWorker do
+  use Oban.Worker
+
+  # Your turn...
+end
+```
+
+Now we can use [`Oban.insert/1`](https://hexdocs.pm/oban/Oban.html#insert/3) to insert a job record into the database and let the `default` queue execute it. When the job executes you'll see the full details of the complete [`Oban.Job`](https://hexdocs.pm/oban/Oban.Job.html) struct.
+
+<details>
+  <summary>Hint</summary>
+  <p>Use `MyApp.InspectWorker.new/1` to create a Job changeset and pass it into `Oban.insert/1`.
+</details>
+
+```elixir
+# Your turn...
+```
+
+There you have it—a minimual yet fully functional Oban installation 🎉!
+
+Of course, it doesn't do much yet. From here on out we'll use the structure of a fully-fledged application to learn how to put Oban's features to work in realistic situations.
+
+## ☠️ Challenges
+
+#### Inspect migrated tables
+
+Use `psql` (Postgres console) or another database explorer tool to look at the tables, indexes, enums, and triggers created by Oban in the `chow_mojo_dev` database.
+
+1. How many `oban_` tables were created?
+2. Which columns have indexes? Can you guess how they're used?
+
+#### Inspect the running Oban supervision tree
+
+Look at which processes are running under the `Oban` instance's supervision tree either through beam tooling, the registry, or browsing the [source code](https://github.com/sorentwo/oban/blob/main/lib/oban.ex#L257).
+
+1. What are the direct children of the Oban supervisor?
+2. Which process handles running queues?
+
+## 🗺 Navigation
+
+<div style="display: flex; align-items: center; width: 100%; justify-content: space-between; font-size: 1rem; color: #61758a; background-color: #f0f5f9; height: 4rem; padding: 0 1rem; border-radius: 1rem;">
+<div style="display: flex;">
+  <i class="ri-home-fill"></i>
+  <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
+</div>
+<div style="display: flex;">
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/02_signing_up.livemd">Signing Up</a>
+  <i class="ri-arrow-right-fill"></i>
+</div>
+</div>
