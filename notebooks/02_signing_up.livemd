@@ -1,0 +1,222 @@
+# Oban Training—Signing Up
+
+```elixir
+Mix.install([:faker, :kino, :oban, :postgrex])
+
+Application.put_env(:chow_mojo, ChowMojo.Repo,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  url: "postgres://localhost:5432/chow_mojo_dev"
+)
+
+defmodule ChowMojo.Repo do
+  use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
+end
+
+defmodule CreateUsers do
+  use Ecto.Migration
+
+  def change do
+    create table(:users) do
+      add(:name, :text, null: false)
+      add(:email, :text, null: false)
+      add(:address, :text)
+
+      timestamps()
+    end
+
+    create(index(:users, [:email], unique: true))
+  end
+end
+
+defmodule ChowMojo.User do
+  use Ecto.Schema
+
+  import Ecto.Changeset
+
+  @type t :: %{id: integer, email: String.t(), name: String.t()}
+
+  schema "users" do
+    field(:email, :string)
+    field(:name, :string)
+
+    timestamps()
+  end
+
+  def insert_changeset(params) do
+    cast(%__MODULE__{}, params, ~w(email name)a)
+  end
+end
+
+defmodule ChowMojo do
+  @spec get_user(id :: integer) :: ChowMojo.User.t() | nil
+  def get_user(id) do
+    ChowMojo.Repo.get(ChowMojo.User, id)
+  end
+
+  @spec send_welcome_email(ChowMojo.User.t()) :: {:ok, String.t()}
+  def send_welcome_email(%{email: email}) do
+    send(self(), {:delivered, email})
+
+    {:ok, email}
+  end
+end
+
+ChowMojo.Repo.start_link()
+
+Ecto.Migrator.run(ChowMojo.Repo, [{1, CreateUsers}], :up, all: true)
+
+Ecto.Adapters.SQL.Sandbox.mode(ChowMojo.Repo, :manual)
+```
+
+## Introduction
+
+From here on in we're working on **ChowMojo**, a food delivery app for exotic pets. Throughout these exercises you'll enhance the app's functionality with one or more background processing tasks.
+
+All foundational application setup, boilerplate modules, seed data, and other support is defined in Setup above.
+
+## 🏅 Goals
+
+In this exercise you'll create a job that delivers follow-up email(s) in the background after a new user signs up. Pushing email delivery into the background makes delivery more reliable due to error handling and retries with backoff.
+
+## Welcoming Users
+
+We'll start by creating a `ChowMojo.WelcomeEmail` worker that delivers a welcome email with `ChowMojo.send_welcome_email/1` after users sign up. [Pass options to `use Oban.Worker`](https://hexdocs.pm/oban/Oban.Worker.html#module-defining-workers) that configure the worker to use the `:email` queue.
+
+Your `perform/1` function should accept an args map like `%{"id" => id}`. Job args are always serialized into a JSON map, and structs such as Ecto schema aren't serializable.
+
+<details>
+  <summary><i>Use a Hint</i></summary>
+  <p>Configure the queue with <code>queue: :email</code>. Then, write a <code>perform/1</code> function that accepts an job schema with string args, like <code>%{args: %{"id" => id}}</code> and use the id to lookup a user with <code>ChowMojo.get_user/1</code>. Finally, use the returned user to call <code>ChowMojo.send_welcome_email/1</code>.</p>
+</details>
+
+```elixir
+defmodule ChowMojo.WelcomeWorker do
+  # Your turn...
+end
+```
+
+Use `Oban.insert/1` to enqueue a job for your new worker after a user is created within `ChowMojo.create_user/1`. Remember, only pass in the user's `id`, _not_ the entire `User` struct.
+
+<details>
+  <summary><i>Use a Hint</i></summary>
+  <p>Take the <code>{:ok, user}</code> returned from <code>Repo.insert/1</code>, pass the user's id into <code>WelcomeWorker.new/1</code>, and then use <code>Oban.insert/1</code> to insert it.</p>
+</details>
+
+```elixir
+defmodule ChowMojo.Users do
+  def create_user(params) do
+    changeset = ChowMojo.User.insert_changeset(params)
+
+    {:ok, user} = ChowMojo.Repo.insert(changeset)
+  end
+end
+```
+
+## Testing
+
+To verify the job is enqueued with the necessary arguments in the correct queue we'll write a test. But first, we need to configure Oban for testing.
+
+[Oban offers two testing modes](https://hexdocs.pm/oban/testing.html#setup-application-config): `:inline` and `:manual`. The `:inline` mode executes jobs directly in the test process and avoids touching the database at all, whereas `:manual` mode  uses Ecto's sandbox to insert jobs in an isolated transaction. In either case, Oban doesn't run any queue processes to simplify testing.
+
+We'll use both modes to test our aspects of the `WelcomeWorker`, starting with `:inline`. Modify `setup/0` to start Oban in `:inline` mode. (Note: Typically this configuration goes in `test.exs`)
+
+<details>
+  <summary><i>Use a Hint</i></summary>
+  <p>Add <code>testing: :inline</code> to where Oban is started</p>
+</details>
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule ChowMojo.InlineUsersTest do
+  use ExUnit.Case
+
+  setup do
+    # Your turn...
+    start_supervised!({Oban, repo: ChowMojo.Repo})
+
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(ChowMojo.Repo)
+  end
+
+  test "creating a user delivers a welcome email" do
+    # Your turn...
+
+    params = %{email: "shannon@sorentwo.com", name: "Shannon"}
+
+    {:ok, user} = ChowMojo.Users.create_user(params)
+
+    assert_email_delivered(user.email)
+  end
+
+  defp assert_email_delivered(email) do
+    assert_receive {:delivered, ^email}
+  end
+end
+
+ExUnit.run()
+```
+
+Once the `WelcomeWorker` job executes successfully you'll see one test pass with zero failures. You've exercised the full welcome flow within the test process, without touching the database! Now we'll write another test using the helpers provided by `Oban.Testing` to assert that the job is enqueued in the database properly.
+
+Set the testing mode to `:manual`, [setup the testing helpers](https://hexdocs.pm/oban/testing.html#setup-testing-helpers), then use [`assert_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#module-using-in-tests) to verify the job is enqueued.
+
+<details>
+  <summary><i>Use a Hint</i></summary>
+  <p>Setup testing helpers with <code>use Oban.Testing, repo: ChowMojo.Repo</code>. To assert the job is enqueued, check the <code>:worker</code>, <code>:queue</code>, and <code>:args</code>.
+</details>
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule ChowMojo.ManualUsersTest do
+  use ExUnit.Case
+
+  use Oban.Testing, repo: ChowMojo.Repo
+
+  setup do
+    # Your turn...
+    start_supervised!({Oban, repo: ChowMojo.Repo})
+
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(ChowMojo.Repo)
+  end
+
+  test "creating a user enqueues a welcome email" do
+    params = %{email: "shannon@sorentwo.com", name: "Shannon"}
+
+    {:ok, user} = ChowMojo.Users.create_user(params)
+
+    # Your turn...
+  end
+end
+
+ExUnit.run()
+```
+
+## ☠️ Extra Challenges
+
+#### Schedule a follow-up job
+
+Create a follow-up job that runs one day in the future after user creation.
+
+1. Use the `schedule_in` option to delay job execution until a later time
+2. Try using the `{:days, N}` shorthand rather than calculating using raw seconds
+
+#### Enqueue in a transaction
+
+Because Oban jobs are database records they can be inserted alongside your domain objects within a transaction. Use `Oban.insert/3` to insert everything together.
+
+1. Use an `Ecto.Multi` to create the `User` and insert both jobs in a single transaction
+2. Use a function to create each job so you can reference the Multi's changes
+
+<!-- livebook:{"break_markdown":true} -->
+
+<div style="display: flex; align-items: center; width: 100%; justify-content: space-between; font-size: 1rem; color: #61758a; background-color: #f0f5f9; height: 4rem; padding: 0 1rem; border-radius: 1rem;">
+<div style="display: flex;">
+  <i class="ri-home-fill"></i>
+  <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
+</div>
+<div style="display: flex;">
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/03_place_an_order.livemd">Place an Order</a>
+  <i class="ri-arrow-right-fill"></i>
+</div>
+</div>

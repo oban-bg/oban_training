@@ -31,7 +31,7 @@
 
 [📓 Open Notebook](./notebooks/01_setup.livemd)
 
-### 02—Sign Up
+### 02—Signing Up
 
 * Creating worker modules
 * Enqueueing jobs

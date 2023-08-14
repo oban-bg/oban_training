@@ -23,8 +23,8 @@ end
 Now we're ready to define a database migration that will create the various tables and indexes Oban requires to operate. Find the section on migrations in Oban's [installation guide](https://hexdocs.pm/oban/installation.html) and fill in `up/0` and `down/0` functions in the following migration:
 
 <details>
-  <summary>Hint</summary>
-  Call the `Oban.Migration.up/1` and `Oban.Migration.down/1` functions. Using an explicit version like `version: 11` is optional.
+  <summary><i>Use a Hint</i></summary>
+  <p>Call the <code>Oban.Migration.up/1</code> and <code>Oban.Migration.down/1</code> functions. Using an explicit version like <code>version: 11</code> is optional.</p>
 </details>
 
 ```elixir
@@ -55,20 +55,21 @@ Scroll through the migration output and note that there are tables, indexes, and
 To verify everything is working we'll [start an Oban instance](https://hexdocs.pm/oban/Oban.html#start_link/1) with the absolute minimum configuration, the `repo` and a single `default` queue.
 
 <details>
-  <summary>Hint</summary>
-  Set `start_opts` to `repo: MyApp.Repo` and `queues: [default: 10]`.
+  <summary><i>Use a Hint</i></summary>
+  <p>Set <code>start_opts</code> to <code>repo: MyApp.Repo</code> and <code>queues: [default: 10]</code>.</p>
 </details>
 
 ```elixir
 # Your turn...
-start_opts =
-  case Oban.start_link(start_opts) do
-    {:ok, pid} ->
-      pid
+start_opts = []
 
-    {:error, {:already_started, pid}} ->
-      pid
-  end
+case Oban.start_link(start_opts) do
+  {:ok, pid} ->
+    pid
+
+  {:error, {:already_started, pid}} ->
+    pid
+end
 ```
 
 With a running Oban instance we have something to poke at. Start by seeing if the process is alive and fetching its configuration using [Oban.config/0,1](https://hexdocs.pm/oban/Oban.html#config/1):
@@ -82,8 +83,8 @@ The `Oban.Config` struct has ample fields that we'll ignore for now. The importa
 Now we'll use [Oban.check_queue/1](https://hexdocs.pm/oban/Oban.html#check_queue/2) to verify that the `default` queue you configured is alive as well:
 
 <details>
-  <summary>Hint</summary>
-  Call `Oban.check_queue(queue: :default)`
+  <summary><i>Use a Hint</i></summary>
+  <p>Call <code>Oban.check_queue(queue: :default)</code></p>
 </details>
 
 ```elixir
@@ -101,8 +102,8 @@ Any module that implements the [Oban.Worker](https://hexdocs.pm/oban/Oban.Worker
 [Define a worker](https://hexdocs.pm/oban/Oban.Worker.html#module-defining-workers) named `MyApp.InspectWorker` that uses `IO.inspect/1` to print the `job` argument:
 
 <details>
-  <summary>Hint</summary>
-  Define a `perform/1` function that uses `IO.inspect(job, label: "Running Job")`
+  <summary><i>Use a Hint</i></summary>
+  <p>Define a <code>perform/1</code> function that uses <code>IO.inspect(job, label: "Running Job")</code>.</p>
 </details>
 
 ```elixir
@@ -116,8 +117,8 @@ end
 Now we can use [`Oban.insert/1`](https://hexdocs.pm/oban/Oban.html#insert/3) to insert a job record into the database and let the `default` queue execute it. When the job executes you'll see the full details of the complete [`Oban.Job`](https://hexdocs.pm/oban/Oban.Job.html) struct.
 
 <details>
-  <summary>Hint</summary>
-  <p>Use `MyApp.InspectWorker.new/1` to create a Job changeset and pass it into `Oban.insert/1`.
+  <summary><i>Use a Hint</i></summary>
+  <p>Use <code>MyApp.InspectWorker.new/1</code> to create a Job changeset and pass it into <code>Oban.insert/1</code>.</p>
 </details>
 
 ```elixir
@@ -128,7 +129,7 @@ There you have it—a minimual yet fully functional Oban installation 🎉!
 
 Of course, it doesn't do much yet. From here on out we'll use the structure of a fully-fledged application to learn how to put Oban's features to work in realistic situations.
 
-## ☠️ Challenges
+## ☠️ Extra Challenges
 
 #### Inspect migrated tables
 
@@ -144,7 +145,7 @@ Look at which processes are running under the `Oban` instance's supervision tree
 1. What are the direct children of the Oban supervisor?
 2. Which process handles running queues?
 
-## 🗺 Navigation
+<!-- livebook:{"break_markdown":true} -->
 
 <div style="display: flex; align-items: center; width: 100%; justify-content: space-between; font-size: 1rem; color: #61758a; background-color: #f0f5f9; height: 4rem; padding: 0 1rem; border-radius: 1rem;">
 <div style="display: flex;">
