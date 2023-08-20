@@ -1,0 +1,301 @@
+# Oban Training—Refunding an Order
+
+```elixir
+Mix.install([:faker, :kino, :oban, :postgrex])
+
+Logger.configure(level: :info)
+
+Application.put_env(:chow_mojo, ChowMojo.Repo,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  url: "postgres://localhost:5432/chow_mojo_dev"
+)
+
+defmodule ChowMojo.Repo do
+  use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
+end
+
+defmodule ChowMojo.User do
+  use Ecto.Schema
+
+  @type t :: %{id: integer, email: String.t(), name: String.t()}
+
+  schema "users" do
+    field(:email, :string)
+    field(:name, :string)
+
+    timestamps()
+  end
+end
+
+defmodule ChowMojo.Restaurant do
+  use Ecto.Schema
+
+  alias ChowMojo.Order
+
+  @type t :: %__MODULE__{
+          id: pos_integer(),
+          name: String.t(),
+          address: String.t(),
+          rating: float()
+        }
+
+  schema "restaurants" do
+    field(:name, :string)
+    field(:address, :string)
+    field(:rating, :float)
+
+    timestamps()
+
+    has_many(:orders, Order)
+  end
+end
+
+defmodule ChowMojo.Order do
+  use Ecto.Schema
+
+  alias ChowMojo.{Restaurant, User}
+
+  @type t :: %__MODULE__{
+          id: pos_integer(),
+          notes: String.t(),
+          total: integer(),
+          dispatched_at: NaiveDateTime.t(),
+          delivered_at: NaiveDateTime.t()
+        }
+
+  schema "orders" do
+    field(:notes, :string)
+    field(:total, :integer, default: 0)
+    field(:dispatched_at, :naive_datetime_usec)
+    field(:delivered_at, :naive_datetime_usec)
+
+    timestamps()
+
+    belongs_to(:restaurant, Restaurant)
+    belongs_to(:user, User)
+  end
+end
+
+defmodule ChowMojo.ObanCase do
+  use ExUnit.CaseTemplate
+
+  using do
+    quote do
+      use Oban.Testing, repo: ChowMojo.Repo
+      import ChowMojo.ObanCase
+    end
+  end
+
+  setup do
+    Ecto.Adapters.SQL.Sandbox.mode(ChowMojo.Repo, {:shared, self()})
+    Ecto.Adapters.SQL.Sandbox.checkout(ChowMojo.Repo)
+  end
+
+  def insert(:order, :refund_failure) do
+    insert(notes: "Get it here quickly", total: 99)
+  end
+
+  def insert(params) do
+    ChowMojo.Order
+    |> struct!(params)
+    |> ChowMojo.Repo.insert!()
+  end
+end
+
+defmodule ChowMojo do
+  def get_order(id), do: ChowMojo.Repo.get(ChowMojo.Order, id)
+
+  def refund_order(%{total: 99}, _reason), do: {:error, :unknown_order}
+  def refund_order(_order, _reason), do: :ok
+end
+
+ChowMojo.Repo.start_link()
+```
+
+## 🏅 Goals
+
+In this exercise you'll learn how to prevent duplicate jobs with unique options, how to "upsert" jobs by replacing fields on unique conflict, and how to integration test jobs by draining queues.
+
+## Coordinating Refunds
+
+Inevitably some customers will be unhappy with an order and they'll want to get their money back. Refunds are a delicate operation because money is involved and we want to guarantee there aren't duplicate transactions while keeping the operation in a reliable background job.
+
+This is where [unique jobs](https://hexdocs.pm/oban/Oban.html#module-unique-jobs) come in.
+
+To begin, define a `Refunder` worker that takes an order id and a refund reason as args, fetches the order, and calls `ChowMojo.refund_order/2` to refund the money.
+
+<details>
+<summary><i>Use a hint</i></summary>
+
+Define the standard `perform/1` without any unique options yet:
+
+```elixir
+use Oban.Worker
+
+@impl Worker
+def perform(%Job{args: %{"id" => order_id, "reason" => reason}}) do
+  order_id
+  |> ChowMojo.get_order()
+  |> ChowMojo.refund_order(reason)
+end
+```
+
+</details>
+
+```elixir
+defmodule ChowMojo.Refunder do
+  # Your turn...
+end
+```
+
+So far we have an ordinary worker like the ones we've written in previous exercises. It lacks the unique configuration that prevents duplicate jobs.
+
+Modify the `Refunder` worker to be unique forever and write a test that verifies only one refund job may exist for an order, even with different reasons.
+
+An `Oban` instance is started for `:manual` testing where jobs are inserted into the database rather than executing immediately. Your tests should insert multiple jobs with the same order id, and maybe the same reason, then use [`all_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#all_enqueued/2) to ensure there aren't duplicates.
+
+<details>
+<summary><i>Use a hint</i></summary>
+
+Insert two jobs with the same `id`, but different `reason` values, then assert that there is only one enqueued:
+
+```elixir
+test "ensuring only one refund for an order is ever created" do
+  Oban.insert!(ChowMojo.Refunder.new(%{id: 1, reason: "It was awful"}))
+  Oban.insert!(ChowMojo.Refunder.new(%{id: 1, reason: "I said it was awful"}))
+
+  jobs = all_enqueued(worker: ChowMojo.Refunder)
+
+  assert 1 == length(jobs)
+end
+```
+
+To make the test pass, configure uniqueness in the worker:
+
+```elixir
+use Oban.Worker, unique: [period: :infinity, keys: [:id]]
+```
+
+</details>
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule ChowMojo.UniqueRefundTest do
+  use ChowMojo.ObanCase
+
+  setup do
+    :ok
+  end
+
+  test "ensuring only one refund for an order is ever created" do
+    # Your turn...
+  end
+end
+
+ExUnit.run()
+```
+
+## At Most Once
+
+It's essential that refunds are attempted at _most_ one time. Setting `max_attempts` to `1` guarantees that the job may execute one time, after which it is `discarded`. To ensure the refund job gets discarded after a failure we'll use [`Oban.drain_queue/1`](https://hexdocs.pm/oban/Oban.html#drain_queue/2) to execute the job exactly as it would be in production (but  directly in our test process).
+
+<details>
+<summary><i>Use a hint</i></summary>
+
+Enqueue an refunder job and then drain the default queue:
+
+```elixir
+%{id: order.id, reason: "Doesn't matter"}
+|> ChowMojo.Refunder.new()
+|> Oban.insert!()
+
+assert %{discard: 1, success: 0} = Oban.drain_queue(queue: :default)
+```
+
+To make the test pass, set `max_attempts` in `Refunder`:
+
+```elixir
+use Oban.Worker, max_attempts: 1, unique: [period: :infinity, keys: [:id]]
+```
+
+</details>
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule ChowMojo.SingleRefundAttemptTest do
+  use ChowMojo.ObanCase
+
+  setup do
+    start_supervised!({Oban, repo: ChowMojo.Repo, testing: :manual})
+
+    :ok
+  end
+
+  test "failed refund attempts are discarded" do
+    order = insert(:order, :refund_failure)
+
+    # Your turn...
+  end
+end
+
+ExUnit.run()
+```
+
+The `unique` option offers controls for which fields are checked (`:worker`, `:queue`, and `:args` by default) and how long a job should be unique for (60 seconds by default). It also has `:states` to control which job states are considered duplicate. By default it includes all states except for `:cancelled` and `:discarded`, which is typically appropriate but undesirable when jobs only have a single attempt.
+
+Configure [uniqueness for all states except `cancelled`](https://hexdocs.pm/oban/Oban.Job.html#states/0) and augment the single refund attempt test above to verify that duplicate refunds can't be inserted after a job's discarded.
+
+<details>
+<summary><i>Use a hint</i></summary>
+
+Insert a new a refund job after `drain_queue` in the test above and refute anything is enqueued.
+
+```elixir
+
+%{id: order.id, reason: "Still doesn't matter"}
+|> ChowMojo.Refunder.new()
+|> Oban.insert!()
+
+refute_enqueued worker: ChowMojo.Refunder
+```
+
+Get all states with `Oban.Job.states/0` and exclude cancelled:
+
+```elixir
+use Oban.Worker,
+  max_attempts: 1,
+  unique: [period: :infinity, keys: [:id], states: Oban.Job.states() -- [:cancelled]]
+```
+
+</details>
+
+## ☠️ Extra Challenges
+
+#### Manually retrying discarded jobs
+
+Once jobs exhaust their possible attempts they're marked as `discarded` and won't retry again. With only a single attempt, e.g. `max_attempts: 1`, it's possible that a job is discarded during a normal server shutdown and you still want to run it.
+
+Use [retry_job/1,2](https://hexdocs.pm/oban/Oban.html#retry_job/2) or [retry_all_jobs/2](https://hexdocs.pm/oban/Oban.html#retry_all_jobs/2) to resuscitate a discarded job. What happens to the job's `max_attempts` and `state`?
+
+#### Debouncing with replace
+
+Sometimes customers are hasty and click to refund before they've written a reason. To compensate for unpredictable customers schedule refunds for 10 minutes after they're requested and use [replace](https://hexdocs.pm/oban/Oban.html#module-unique-jobs) to reschedule farther in the future.
+
+The `replace` option can only be used when building a job, not when defining the worker. That means you must pass it as an option to `Refunder.new/2`, _or_ override the `Refunder.new/2` callback function to automatically inject `replace` options.
+
+Write a test to [verify that the job's `scheduled_at` time changes](https://hexdocs.pm/oban/Oban.Testing.html#module-matching-scheduled-jobs-and-timestamps).
+
+<!-- livebook:{"break_markdown":true} -->
+
+<div style="display: flex; align-items: center; width: 100%; justify-content: space-between; font-size: 1rem; color: #61758a; background-color: #f0f5f9; height: 4rem; padding: 0 1rem; border-radius: 1rem;">
+<div style="display: flex;">
+  <i class="ri-home-fill"></i>
+  <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
+</div>
+<div style="display: flex;">
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/05_daily_earnings.livemd">Daily Earnings</a>
+  <i class="ri-arrow-right-fill"></i>
+</div>
+</div>

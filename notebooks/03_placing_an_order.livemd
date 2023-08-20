@@ -14,48 +14,8 @@ defmodule ChowMojo.Repo do
   use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
 end
 
-defmodule ChowMojo.User do
-  use Ecto.Schema
-
-  @type t :: %{id: integer, email: String.t(), name: String.t()}
-
-  schema "users" do
-    field(:email, :string)
-    field(:name, :string)
-
-    timestamps()
-  end
-end
-
-defmodule ChowMojo.Restaurant do
-  use Ecto.Schema
-
-  alias ChowMojo.Order
-
-  @type t :: %__MODULE__{
-          id: pos_integer(),
-          name: String.t(),
-          address: String.t(),
-          rating: float()
-        }
-
-  schema "restaurants" do
-    field(:name, :string)
-    field(:address, :string)
-    field(:rating, :float)
-
-    timestamps()
-
-    has_many(:orders, Order)
-  end
-end
-
 defmodule ChowMojo.Order do
   use Ecto.Schema
-
-  import Ecto.Changeset
-
-  alias ChowMojo.{Restaurant, User}
 
   @type t :: %__MODULE__{
           id: pos_integer(),
@@ -72,19 +32,6 @@ defmodule ChowMojo.Order do
     field(:delivered_at, :naive_datetime_usec)
 
     timestamps()
-
-    belongs_to(:restaurant, Restaurant)
-    belongs_to(:user, User)
-  end
-
-  def insert_changeset(params) do
-    {user, params} = Map.pop(params, :user)
-    {restaurant, params} = Map.pop(params, :restaurant)
-
-    %__MODULE__{}
-    |> cast(params, __schema__(:fields))
-    |> put_assoc(:user, user)
-    |> put_assoc(:restaurant, restaurant)
   end
 end
 
@@ -398,7 +345,7 @@ Implement a `timeout/1` callback to limit execution time and try writing a `perf
   <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
 </div>
 <div style="display: flex;">
-  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/03_place_an_order.livemd">Refund an Order</a>
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/04_refunding_an_order.livemd">Refunding an Order</a>
   <i class="ri-arrow-right-fill"></i>
 </div>
 </div>

@@ -40,14 +40,12 @@
 * Managing retry backoff
 * Providing execution timeouts
 
-### 04—Refund an Order
+### 📓 [Refunding an Order](./notebooks/04_refunding_an_order.livemd)
 
-* Cancelling and retrying jobs
 * Ensuring uniqueness
+* Cancelling and retrying jobs
 * Replacing fields on unique conflicts
 * Draining queues for integration testing
-
-[📓 Open Notebook](/introduction.livemd)
 
 ### 05—Delivering a Daily Digest
 
