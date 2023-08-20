@@ -8,45 +8,37 @@
 
 ### Prerequisites
 
-* Install [Elixir](https://elixir-lang.org/install.html) (1.14+ recommended)
 * Install [Livebook](https://github.com/livebook-dev/livebook) (0.9+ recommended)
 * Install [Postgres](https://www.postgresql.org/download/) (14+ recommended)
 
 ## Sections
 
-### 00—Why Oban?
+### 📓 [Why Oban?](./notebooks/introduction.livemd)
 
 * Where we convince you that using Oban is a good idea
 * Not really. It's where we'll give a high level overview of the architecture
 * Terminology, how things work
 
-[📓 Open Notebook](./notebooks/introduction.livemd)
-
-### 01—Up and Running
+### 📓 [Up and Running](./notebooks/01_up_and_running.livemd)
 
 * Installing Oban into an application
 * Running migrations
 * Configuring for tests
 * Verifying Oban is running and configured properly
 
-[📓 Open Notebook](./notebooks/01_setup.livemd)
-
-### 02—Signing Up
+### 📓 [Signing Up](./notebooks/02_signing_up.livemd)
 
 * Creating worker modules
 * Enqueueing jobs
 * Scheduling jobs to run in the future
 * Asserting jobs are enqueued in tests
 
-[📓 Open Notebook](./notebooks/02_signing_up.livemd)
-
-### 03—Place an Order
+### 📓 [Placing an Order](./notebooks/03_placing_an_order.livemd)
 
 * Controlling worker behaviour with return values
-* Managing retry backoff
 * Testing worker functionality
-
-[📓 Open Notebook](/introduction.livemd)
+* Managing retry backoff
+* Providing execution timeouts
 
 ### 04—Refund an Order
 
