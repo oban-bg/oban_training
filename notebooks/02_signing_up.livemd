@@ -3,6 +3,8 @@
 ```elixir
 Mix.install([:faker, :kino, :oban, :postgrex])
 
+Logger.configure(level: :info)
+
 Application.put_env(:chow_mojo, ChowMojo.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   url: "postgres://localhost:5432/chow_mojo_dev"
@@ -68,12 +70,6 @@ Ecto.Migrator.run(ChowMojo.Repo, [{1, CreateUsers}], :up, all: true)
 Ecto.Adapters.SQL.Sandbox.mode(ChowMojo.Repo, :manual)
 ```
 
-## Introduction
-
-From here on in we're working on **ChowMojo**, a food delivery app for exotic pets. Throughout these exercises you'll enhance the app's functionality with one or more background processing tasks.
-
-All foundational application setup, boilerplate modules, seed data, and other support is defined in Setup above.
-
 ## 🏅 Goals
 
 In this exercise you'll create a job that delivers follow-up email(s) in the background after a new user signs up. Pushing email delivery into the background makes delivery more reliable due to error handling and retries with backoff.
@@ -82,11 +78,26 @@ In this exercise you'll create a job that delivers follow-up email(s) in the bac
 
 We'll start by creating a `ChowMojo.WelcomeEmail` worker that delivers a welcome email with `ChowMojo.send_welcome_email/1` after users sign up. [Pass options to `use Oban.Worker`](https://hexdocs.pm/oban/Oban.Worker.html#module-defining-workers) that configure the worker to use the `:email` queue.
 
-Your `perform/1` function should accept an args map like `%{"id" => id}`. Job args are always serialized into a JSON map, and structs such as Ecto schema aren't serializable.
+Your `perform/1` function should accept an args map like `%{"id" => id}` and use `ChowMojo.get_user/1` to fetch the user. Job args are always serialized into a JSON map, and structs such as Ecto schema aren't serializable.
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Configure the queue with <code>queue: :email</code>. Then, write a <code>perform/1</code> function that accepts an job schema with string args, like <code>%{args: %{"id" => id}}</code> and use the id to lookup a user with <code>ChowMojo.get_user/1</code>. Finally, use the returned user to call <code>ChowMojo.send_welcome_email/1</code>.</p>
+<summary><i>Use a Hint</i></summary>
+
+Configure the worker's queue with `queue: :email`. Then, write a `perform/1` function that accepts a job struct with string args, fetches the user, then sends a welcome email.
+
+```elixir
+defmodule ChowMojo.WelcomeWorker do
+  use Oban.Worker, queue: :email
+
+  @impl Worker
+  def perform(%Job{args: %{"id" => id}}) do
+    id
+    |> ChowMojo.get_user()
+    |> ChowMojo.send_welcome_email()
+  end
+end
+```
+
 </details>
 
 ```elixir
@@ -95,15 +106,32 @@ defmodule ChowMojo.WelcomeWorker do
 end
 ```
 
-Use `Oban.insert/1` to enqueue a job for your new worker after a user is created within `ChowMojo.create_user/1`. Remember, only pass in the user's `id`, _not_ the entire `User` struct.
+Now use `Oban.insert/1` to enqueue a `ChowMojo.WelcomeWorker` job for your new worker after a user is created within `ChowMojo.create_user/1`. Remember, only pass in the user's `id`, _not_ the entire `User` struct.
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Take the <code>{:ok, user}</code> returned from <code>Repo.insert/1</code>, pass the user's id into <code>WelcomeWorker.new/1</code>, and then use <code>Oban.insert/1</code> to insert it.</p>
+<summary><i>Use a Hint</i></summary>
+
+Take the `{:ok, user}` returned from `Repo.insert/1` and insert a `WelcomeWorker` job:
+
+```elixir
+def create_user(params) do
+  changeset = ChowMojo.User.insert_changeset(params)
+
+  with {:ok, user} <- ChowMojo.Repo.insert(changeset) do
+    %{id: user.id}
+    |> ChowMojo.WelcomeWorker.new()
+    |> Oban.insert!()
+
+    {:ok, user}
+  end
+end
+```
+
 </details>
 
 ```elixir
 defmodule ChowMojo.Users do
+  @spec create_user(map) :: {:ok, ChowMojo.User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(params) do
     changeset = ChowMojo.User.insert_changeset(params)
 
@@ -118,11 +146,17 @@ To verify the job is enqueued with the necessary arguments in the correct queue 
 
 [Oban offers two testing modes](https://hexdocs.pm/oban/testing.html#setup-application-config): `:inline` and `:manual`. The `:inline` mode executes jobs directly in the test process and avoids touching the database at all, whereas `:manual` mode  uses Ecto's sandbox to insert jobs in an isolated transaction. In either case, Oban doesn't run any queue processes to simplify testing.
 
-We'll use both modes to test our aspects of the `WelcomeWorker`, starting with `:inline`. Modify `setup/0` to start Oban in `:inline` mode. (Note: Typically this configuration goes in `test.exs`)
+We'll use both modes to test our aspects of the `WelcomeWorker`, starting with `:inline`. Modify `setup/0` to start Oban in `:inline` mode. (Note: Typically this configuration goes in `test.exs` and you run tests with `mix test`)
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Add <code>testing: :inline</code> to where Oban is started</p>
+<summary><i>Use a Hint</i></summary>
+
+Add `testing: :inline` to where Oban is started:
+
+```elixir
+start_supervised!({Oban, repo: ChowMojo.Repo, testing: :inline})
+```
+
 </details>
 
 ```elixir
@@ -139,8 +173,6 @@ defmodule ChowMojo.InlineUsersTest do
   end
 
   test "creating a user delivers a welcome email" do
-    # Your turn...
-
     params = %{email: "shannon@sorentwo.com", name: "Shannon"}
 
     {:ok, user} = ChowMojo.Users.create_user(params)
@@ -149,7 +181,7 @@ defmodule ChowMojo.InlineUsersTest do
   end
 
   defp assert_email_delivered(email) do
-    assert_receive {:delivered, ^email}
+    assert_receive {:delivered, ^email}, 250, "expected an email delivered to #{email}"
   end
 end
 
@@ -158,11 +190,17 @@ ExUnit.run()
 
 Once the `WelcomeWorker` job executes successfully you'll see one test pass with zero failures. You've exercised the full welcome flow within the test process, without touching the database! Now we'll write another test using the helpers provided by `Oban.Testing` to assert that the job is enqueued in the database properly.
 
-Set the testing mode to `:manual`, [setup the testing helpers](https://hexdocs.pm/oban/testing.html#setup-testing-helpers), then use [`assert_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#module-using-in-tests) to verify the job is enqueued.
+In this test the testing mode is already set to `:manual`. [Setup the testing helpers](https://hexdocs.pm/oban/testing.html#setup-testing-helpers), then use [`assert_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#module-using-in-tests) to verify the job is enqueued.
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Setup testing helpers with <code>use Oban.Testing, repo: ChowMojo.Repo</code>. To assert the job is enqueued, check the <code>:worker</code>, <code>:queue</code>, and <code>:args</code>.
+<summary><i>Use a Hint</i></summary>
+
+Assert the job is enqueued by checking the `:worker`, `:queue`, and `:args`:
+
+```elixir
+assert_enqueued worker: ChowMojo.WelcomeWorker, queue: :email, args: %{id: user.id}
+```
+
 </details>
 
 ```elixir
@@ -171,11 +209,10 @@ ExUnit.start(auto_run: false)
 defmodule ChowMojo.ManualUsersTest do
   use ExUnit.Case
 
-  use Oban.Testing, repo: ChowMojo.Repo
+  # Your turn...
 
   setup do
-    # Your turn...
-    start_supervised!({Oban, repo: ChowMojo.Repo})
+    start_supervised!({Oban, repo: ChowMojo.Repo, testing: :manual})
 
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(ChowMojo.Repo)
   end
@@ -196,10 +233,11 @@ ExUnit.run()
 
 #### Schedule a follow-up job
 
-Create a follow-up job that runs one day in the future after user creation.
+Create another worker and deliver a follow-up job one day in the future after user creation. The follow-up should call `ChowMojo.second_day_email/1` to deliver the email.
 
 1. Use the `schedule_in` option to delay job execution until a later time
 2. Try using the `{:days, N}` shorthand rather than calculating using raw seconds
+3. Write a test to verify the email is [scheduled for delivery in the future](https://hexdocs.pm/oban/Oban.Testing.html#module-matching-scheduled-jobs-and-timestamps)
 
 #### Enqueue in a transaction
 
