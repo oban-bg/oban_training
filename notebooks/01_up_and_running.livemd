@@ -8,6 +8,10 @@ Mix.install([:kino, :oban, :postgrex])
 
 Typically, you'd [install Oban into your application](https://hexdocs.pm/oban/installation.html) by adding the package to your `deps`, adding some configuration, and generating a few migrations. Since this is LiveBook and not an application, we've already setup the `:oban` package and we'll skip straight to some simple configuration after some minimial setup.
 
+## 🏅 Goals
+
+Gain understanding of how to install Oban, prepare the database, and configure it to run in an application.
+
 ## Migrations
 
 Oban requires a Postgres (or SQlite) and a functional `Ecto.Repo`. For now, we'll define a basic repo with minimal configuration:
@@ -23,8 +27,20 @@ end
 Now we're ready to define a database migration that will create the various tables and indexes Oban requires to operate. Find the section on migrations in Oban's [installation guide](https://hexdocs.pm/oban/installation.html) and fill in `up/0` and `down/0` functions in the following migration:
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Call the <code>Oban.Migration.up/1</code> and <code>Oban.Migration.down/1</code> functions. Using an explicit version like <code>version: 11</code> is optional.</p>
+<summary><i>Use a Hint</i></summary>
+
+use `Oban.Migration` functions to define `up` and `down`:
+
+```elixir
+def up do
+  Oban.Migration.up(version: 11)
+end
+
+def down do
+  Oban.Migration.down(version: 1)
+end
+```
+
 </details>
 
 ```elixir
@@ -55,8 +71,14 @@ Scroll through the migration output and note that there are tables, indexes, and
 To verify everything is working we'll [start an Oban instance](https://hexdocs.pm/oban/Oban.html#start_link/1) with the absolute minimum configuration, the `repo` and a single `default` queue.
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Set <code>start_opts</code> to <code>repo: MyApp.Repo</code> and <code>queues: [default: 10]</code>.</p>
+<summary><i>Use a Hint</i></summary>
+
+Set `start_opts` with a repo and queues:
+
+```elixir
+start_opts: [repo: MyApp.Repo, queues: [default: 10]]
+```
+
 </details>
 
 ```elixir
@@ -83,8 +105,11 @@ The `Oban.Config` struct has ample fields that we'll ignore for now. The importa
 Now we'll use [Oban.check_queue/1](https://hexdocs.pm/oban/Oban.html#check_queue/2) to verify that the `default` queue you configured is alive as well:
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Call <code>Oban.check_queue(queue: :default)</code></p>
+<summary><i>Use a Hint</i></summary>
+
+```elixir
+Oban.check_queue(queue: :default)
+```
 </details>
 
 ```elixir
@@ -102,8 +127,17 @@ Any module that implements the [Oban.Worker](https://hexdocs.pm/oban/Oban.Worker
 [Define a worker](https://hexdocs.pm/oban/Oban.Worker.html#module-defining-workers) named `MyApp.InspectWorker` that uses `IO.inspect/1` to print the `job` argument:
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Define a <code>perform/1</code> function that uses <code>IO.inspect(job, label: "Running Job")</code>.</p>
+<summary><i>Use a Hint</i></summary>
+
+Define a `perform/1` function that uses `IO.inspect/2`:
+
+```elixir
+@impl Oban.Worker
+def perform(job) do
+  IO.inspect(job, label: "Running Job")
+end
+```
+
 </details>
 
 ```elixir
@@ -117,8 +151,16 @@ end
 Now we can use [`Oban.insert/1`](https://hexdocs.pm/oban/Oban.html#insert/3) to insert a job record into the database and let the `default` queue execute it. When the job executes you'll see the full details of the complete [`Oban.Job`](https://hexdocs.pm/oban/Oban.Job.html) struct.
 
 <details>
-  <summary><i>Use a Hint</i></summary>
-  <p>Use <code>MyApp.InspectWorker.new/1</code> to create a Job changeset and pass it into <code>Oban.insert/1</code>.</p>
+<summary><i>Use a Hint</i></summary>
+
+Use `MyApp.InspectWorker.new/1` to create a Job changeset and pass it into `Oban.insert/1`:
+
+```elixir
+%{some: :args}
+|> MyApp.InspectWorker.new()
+|> Oban.insert()
+```
+
 </details>
 
 ```elixir
@@ -127,7 +169,9 @@ Now we can use [`Oban.insert/1`](https://hexdocs.pm/oban/Oban.html#insert/3) to 
 
 There you have it—a minimual yet fully functional Oban installation 🎉!
 
-Of course, it doesn't do much yet. From here on out we'll use the structure of a fully-fledged application to learn how to put Oban's features to work in realistic situations.
+From here on in we're working on **ChowMojo**, a food delivery app for exotic pets. Throughout these exercises you'll enhance the app's functionality with one or more background processing tasks.
+
+All foundational application setup, boilerplate modules, seed data, and other support is defined in the notebook's setup.
 
 ## ☠️ Extra Challenges
 
