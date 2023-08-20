@@ -4,13 +4,19 @@
 Mix.install([:kino, :oban, :postgrex])
 ```
 
+## 🏅 Goals
+
+<div style="display: flex; align-items: center;">
+
+<img src="images/sailfish.png" width="256" style="padding: 0 2rem 0 0" />
+
+Through this exercise you'll gain understanding of how to install Oban, prepare the database, and configure it to run in an application.
+
+</div>
+
 ## Installation
 
 Typically, you'd [install Oban into your application](https://hexdocs.pm/oban/installation.html) by adding the package to your `deps`, adding some configuration, and generating a few migrations. Since this is LiveBook and not an application, we've already setup the `:oban` package and we'll skip straight to some simple configuration after some minimial setup.
-
-## 🏅 Goals
-
-Gain understanding of how to install Oban, prepare the database, and configure it to run in an application.
 
 ## Migrations
 

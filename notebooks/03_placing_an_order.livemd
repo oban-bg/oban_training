@@ -116,7 +116,13 @@ Ecto.Migrator.run(ChowMojo.Repo, [{2, CreateRestaurants}], :up, all: true)
 
 ## 🏅 Goals
 
+<div style="display: flex; align-items: center;">
+
+<img src="images/crane.png" width="256" style="padding: 0 2rem 0 0" />
+
 In this exercise you'll coordinate notifying a ChowMojo restaurant about a delivery order. You'll learn how to make the job resilient to expected and unexpected errors through return values, custom backoff, and timeouts.
+
+</div>
 
 ## Restaurant Notification
 

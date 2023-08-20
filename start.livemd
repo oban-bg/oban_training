@@ -13,62 +13,58 @@
 
 ## Sections
 
-### 📓 [Why Oban?](./notebooks/introduction.livemd)
+### [📓 Why Oban?](./notebooks/introduction.livemd)
 
 * Where we convince you that using Oban is a good idea
 * Not really. It's where we'll give a high level overview of the architecture
 * Terminology, how things work
 
-### 📓 [Up and Running](./notebooks/01_up_and_running.livemd)
+### [📓 Up and Running](./notebooks/01_up_and_running.livemd)
 
 * Installing Oban into an application
 * Running migrations
 * Configuring for tests
 * Verifying Oban is running and configured properly
 
-### 📓 [Signing Up](./notebooks/02_signing_up.livemd)
+### [📓 Signing Up](./notebooks/02_signing_up.livemd)
 
 * Creating worker modules
 * Enqueueing jobs
 * Scheduling jobs to run in the future
 * Asserting jobs are enqueued in tests
 
-### 📓 [Placing an Order](./notebooks/03_placing_an_order.livemd)
+### [📓 Placing an Order](./notebooks/03_placing_an_order.livemd)
 
 * Controlling worker behaviour with return values
 * Testing worker functionality
 * Managing retry backoff
 * Providing execution timeouts
 
-### 📓 [Refunding an Order](./notebooks/04_refunding_an_order.livemd)
+### [📓 Refunding an Order](./notebooks/04_refunding_an_order.livemd)
 
 * Ensuring uniqueness
 * Cancelling and retrying jobs
 * Replacing fields on unique conflicts
 * Draining queues for integration testing
 
-### 05—Delivering a Daily Digest
+### [📓 Delivering a Daily Digest](./notebooks/05_delivering_a_daily_digest.livemd)
 
 * Running jobs on a schedule
 * Managing multiple queues and concurrency
 * Pausing and resuming queues
 * Validating configuration changes
 
-[📓 Open Notebook](/introduction.livemd)
-
-### 06—Backfilling Reviews
+### [📓 Backfilling Reviews](./notebooks/06_backfilling_reviews.livemd)
 
 * Deprioritizing jobs
 * Inserting multiple jobs at once
 * Recursively enqueuing jobs
 * Asserting the content of all enqueued jobs
 
-### 07—Ready for Production
+### [📓 Ready for Production](./notebooks/07_ready_for_production.livemd)
 
 * Logging and instrumenting with Telemetry
 * Pruning older jobs
 * Rescuing unexpectedly stopped jobs
 * Reporting errors
 * Troubleshooting
-
-[📓 Open Notebook](/introduction.livemd)

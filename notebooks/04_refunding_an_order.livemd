@@ -114,7 +114,13 @@ ChowMojo.Repo.start_link()
 
 ## 🏅 Goals
 
+<div style="display: flex; align-items: center;">
+
+<img src="images/red-panda-small.png" width="256" style="padding: 0 2rem 0 0" />
+
 In this exercise you'll learn how to prevent duplicate jobs with unique options, how to "upsert" jobs by replacing fields on unique conflict, and how to integration test jobs by draining queues.
+
+</div>
 
 ## Coordinating Refunds
 

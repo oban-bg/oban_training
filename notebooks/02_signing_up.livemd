@@ -72,7 +72,13 @@ Ecto.Adapters.SQL.Sandbox.mode(ChowMojo.Repo, :manual)
 
 ## 🏅 Goals
 
+<div style="display: flex; align-items: center;">
+
+<img src="images/frog.png" width="256" style="padding: 0 2rem 0 0" />
+
 In this exercise you'll create a job that delivers follow-up email(s) in the background after a new user signs up. Pushing email delivery into the background makes delivery more reliable due to error handling and retries with backoff.
+
+</div>
 
 ## Welcoming Users
 
@@ -254,7 +260,7 @@ Because Oban jobs are database records they can be inserted alongside your domai
   <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
 </div>
 <div style="display: flex;">
-  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/03_place_an_order.livemd">Place an Order</a>
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/03_placing_an_order.livemd">Placing an Order</a>
   <i class="ri-arrow-right-fill"></i>
 </div>
 </div>
