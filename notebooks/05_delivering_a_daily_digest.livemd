@@ -1,0 +1,293 @@
+# Oban Training—Delivering a Daily Digest
+
+```elixir
+Mix.install([:faker, :kino, :oban, :postgrex])
+
+Logger.configure(level: :info)
+
+Application.put_env(:chow_mojo, ChowMojo.Repo, url: "postgres://localhost:5432/chow_mojo_dev")
+
+defmodule ChowMojo.Repo do
+  use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
+end
+
+defmodule ChowMojo.User do
+  use Ecto.Schema
+
+  schema "users" do
+    field(:email, :string)
+    field(:name, :string)
+
+    timestamps()
+  end
+end
+
+defmodule ChowMojo.Restaurant do
+  use Ecto.Schema
+
+  schema "restaurants" do
+    field(:name, :string)
+    field(:address, :string)
+    field(:rating, :integer)
+
+    timestamps()
+
+    belongs_to(:owner, ChowMojo.User)
+  end
+end
+
+defmodule ChowMojo.ObanCase do
+  use ExUnit.CaseTemplate
+
+  load = fn path ->
+    [__DIR__, "samples", path]
+    |> Path.join()
+    |> File.read!()
+    |> String.split("\n", trim: true)
+  end
+
+  @animals load.("animals.txt")
+  @adjectives load.("adjectives.txt")
+  @types load.("restaurants.txt")
+
+  using do
+    quote do
+      use Oban.Testing, repo: ChowMojo.Repo
+      import ChowMojo.ObanCase
+    end
+  end
+
+  def insert(:restaurant, :active) do
+    insert(name: name(), address: address())
+  end
+
+  def insert(:restaurant, :inactive) do
+    insert(name: name())
+  end
+
+  def insert(params) do
+    ChowMojo.Restaurant
+    |> struct!(params)
+    |> ChowMojo.Repo.insert!()
+  end
+
+  defp name do
+    [Enum.random(@adjectives), Enum.random(@animals), Enum.random(@types)]
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join(" ")
+  end
+
+  defp address do
+    Enum.join([Faker.Address.city(), Faker.Address.country()], ", ")
+  end
+end
+
+defmodule AddRestaurantOwners do
+  use Ecto.Migration
+
+  def change do
+    alter table(:restaurants) do
+      add(:owner_id, references(:users))
+    end
+  end
+end
+
+defmodule ChowMojo do
+  import Ecto.Query
+
+  def all_active_restaurants do
+    ChowMojo.Restaurant
+    |> where([r], not is_nil(r.address))
+    |> ChowMojo.Repo.all()
+  end
+
+  def deliver_daily_digest(restaurant) do
+    send(self(), {:delivered, restaurant.id})
+
+    :ok
+  end
+end
+
+ChowMojo.Repo.start_link()
+
+Ecto.Migrator.run(ChowMojo.Repo, [{3, AddRestaurantOwners}], :up, all: true)
+```
+
+## 🏅 Goals
+
+<div style="display: flex; align-items: center;">
+
+<img src="images/unicorn.png" width="256" style="padding: 0 2rem 0 0" />
+
+Thus far we've inserted jobs manually or as part of an externally triggered function. In this exercise we'll look at inserting jobs automatically on a schedule, the role of plugins in Oban, and how to manipulate queues at runtime.
+
+</div>
+
+## Daily Digest Emails
+
+ChowMojo restaurant owners would like to know how many orders they fulfilled and how much they earned each day. That's a perfect fit for background jobs like we've written before, so let's whip up a new `DailyDigest` worker.
+
+The twist is that the new worker only receives empty `args` and fetches _all_ restaurants. Use `ChowMojo.all_active_restaurants/0` and `ChowMojo.deliver_daily_digest/1` to accomplish delivery.
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+```elixir
+use Oban.Worker, queue: :email
+
+@impl Worker
+def perform(_job) do
+  Enum.each(ChowMojo.all_active_restaurants(), &ChowMojo.deliver_daily_digest/1)
+end
+```
+
+</details>
+
+```elixir
+defmodule ChowMojo.DailyDigest do
+  # Your turn...
+end
+```
+
+Before moving on to automating digest job creation, let's test the worker using `perform_job/3` as we've done before.
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+Call `perform_job/2` with an empty map:
+
+```elixir
+assert :ok = perform_job(ChowMojo.DailyDigest, %{})
+```
+
+</details>
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule ChowMojo.DailyDigestTest do
+  use ChowMojo.ObanCase
+
+  test "delivering digest emails to all active restaurants" do
+    %{id: id_1, name: name_1} = insert(:restaurant, :active)
+    %{id: id_2, name: name_2} = insert(:restaurant, :inactive)
+    %{id: id_3, name: name_3} = insert(:restaurant, :active)
+
+    # Your turn...
+
+    assert_received {:delivered, ^id_1}
+    refute_received {:delivered, ^id_2}
+    assert_received {:delivered, ^id_3}
+
+    # For your amusement...
+    IO.puts("Digest delivered to:\n\n* #{name_1}\n* #{name_2}\n* #{name_3}")
+  end
+end
+
+ExUnit.run()
+```
+
+With confidence that the worker delivers digests to the correct restaurants, we're ready to automate delivery on a schedule.
+
+The ideal way to [schedule periodic jobs](https://hexdocs.pm/oban/Oban.html#module-periodic-jobs) is with the [Cron plugin](https://hexdocs.pm/oban/Oban.Plugins.Cron.html). In Oban, plugins are processes (GenServers) that insert, update, or delete jobs autonomously based on some configuration. We'll look at other plugins and their role in production systems later on.
+
+For now, let's define options for an Oban instance with a Cron plugin that schedules a `DailyDigest` job every minute and starts an `email` [queue in the paused state](https://hexdocs.pm/oban/Oban.html#module-configuring-queues). Note that we're scheduling jobs frequently for testing purposes, in reality we'd want to deliver digest emails once a day.
+
+At this point we're only validating the config, not starting the instance.
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+
+```elixir
+conf_opts = [
+  repo: ChowMojo.Repo,
+  queues: [email: [limit: 1, paused: true]],
+  plugins: [{Oban.Plugins.Cron, crontab: [{"* * * * *", ChowMojo.DailyDigest}]}]
+]
+```
+
+</details>
+
+```elixir
+# Your turn...
+
+conf_opts = [
+  repo: ChowMojo.Repo
+]
+
+Oban.Config.validate(conf_opts)
+```
+
+Oban's config, including the config of every plugin is validated during startup using the same `validate/1` function. As you may have noticed, if any configuration is invalid, including a cron schedule, it returns an explanatory error and prevents the instance from booting.
+
+Now start the instance with `Oban.start_link/1`.
+
+```elixir
+Oban.start_link(conf_opts)
+```
+
+Cron is running now and it will insert one job every minute. However, because the queue is paused none of those jobs can run and they're left in the `available` state. We can check how many jobs have accumulated by querying the jobs table with `Ecto.Query` functions.
+
+Compose a query to count `Oban.Job` rows grouped by state:
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+Use `Oban.Job` as the base of a query that groups by state:
+
+```elixir
+Oban.Job
+|> where([j], j.queue == "email")
+|> group_by(:state)
+|> select([j], {j.state, count()})
+|> ChowMojo.Repo.all()
+```
+
+</details>
+
+```elixir
+import Ecto.Query
+
+# Your turn...
+```
+
+Once a few jobs have accumulated we can [resume](https://hexdocs.pm/oban/Oban.html#resume_queue/2) the queue and allow it to start processing.
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+```elixir
+Oban.resume_queue(queue: :email)
+```
+
+</details>
+
+```elixir
+# Your turn...
+```
+
+Try reevaluating the count query above after you've resumed the queue. You should see that all the jobs are `completed` now.
+
+## ☠️ Extra Challenges
+
+#### Pause, Resume, Stop, Start
+
+Play with the `:email` queue by [pausing](https://hexdocs.pm/oban/Oban.html#pause_queue/2) it, [resuming](https://hexdocs.pm/oban/Oban.html#resume_queue/2) it, [stopping](https://hexdocs.pm/oban/Oban.html#stop_queue/2) it, and then [starting](https://hexdocs.pm/oban/Oban.html#start_queue/2) it again. Remember, at any point you can see which queues are running with `Oban.config/0` and check the queue itself with `Oban.check_queue/1`.
+
+#### Enqueue Sub-Jobs
+
+Delivering all of the digest emails from a single queue is risky because a single error will cause the entire job to retry. A simple approach to compensating for errors is to enqueue sub-jobs for each digest delivery from the cron trigger. Try adding a new `perform/1` clause that delivers a digest to a single restaurant and enqueue sub-jobs for every active restaurant.
+
+<!-- livebook:{"break_markdown":true} -->
+
+<div style="display: flex; align-items: center; width: 100%; justify-content: space-between; font-size: 1rem; color: #61758a; background-color: #f0f5f9; height: 4rem; padding: 0 1rem; border-radius: 1rem;">
+<div style="display: flex;">
+  <i class="ri-home-fill"></i>
+  <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
+</div>
+<div style="display: flex;">
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/05_backfilling_reviews.livemd">Backfilling Reviews</a>
+  <i class="ri-arrow-right-fill"></i>
+</div>
+</div>
