@@ -35,8 +35,6 @@ defmodule ChowMojo.User do
 
   import Ecto.Changeset
 
-  @type t :: %{id: integer, email: String.t(), name: String.t()}
-
   schema "users" do
     field(:email, :string)
     field(:name, :string)
@@ -50,12 +48,10 @@ defmodule ChowMojo.User do
 end
 
 defmodule ChowMojo do
-  @spec get_user(id :: integer) :: ChowMojo.User.t() | nil
   def get_user(id) do
     ChowMojo.Repo.get(ChowMojo.User, id)
   end
 
-  @spec send_welcome_email(ChowMojo.User.t()) :: {:ok, String.t()}
   def send_welcome_email(%{email: email}) do
     send(self(), {:delivered, email})
 

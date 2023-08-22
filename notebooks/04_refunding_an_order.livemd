@@ -14,54 +14,8 @@ defmodule ChowMojo.Repo do
   use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
 end
 
-defmodule ChowMojo.User do
-  use Ecto.Schema
-
-  @type t :: %{id: integer, email: String.t(), name: String.t()}
-
-  schema "users" do
-    field(:email, :string)
-    field(:name, :string)
-
-    timestamps()
-  end
-end
-
-defmodule ChowMojo.Restaurant do
-  use Ecto.Schema
-
-  alias ChowMojo.Order
-
-  @type t :: %__MODULE__{
-          id: pos_integer(),
-          name: String.t(),
-          address: String.t(),
-          rating: float()
-        }
-
-  schema "restaurants" do
-    field(:name, :string)
-    field(:address, :string)
-    field(:rating, :float)
-
-    timestamps()
-
-    has_many(:orders, Order)
-  end
-end
-
 defmodule ChowMojo.Order do
   use Ecto.Schema
-
-  alias ChowMojo.{Restaurant, User}
-
-  @type t :: %__MODULE__{
-          id: pos_integer(),
-          notes: String.t(),
-          total: integer(),
-          dispatched_at: NaiveDateTime.t(),
-          delivered_at: NaiveDateTime.t()
-        }
 
   schema "orders" do
     field(:notes, :string)
@@ -70,9 +24,6 @@ defmodule ChowMojo.Order do
     field(:delivered_at, :naive_datetime_usec)
 
     timestamps()
-
-    belongs_to(:restaurant, Restaurant)
-    belongs_to(:user, User)
   end
 end
 
@@ -116,7 +67,7 @@ ChowMojo.Repo.start_link()
 
 <div style="display: flex; align-items: center;">
 
-<img src="images/red-panda-small.png" width="256" style="padding: 0 2rem 0 0" />
+<img src="images/red-panda.png" width="256" style="padding: 0 2rem 0 0" />
 
 In this exercise you'll learn how to prevent duplicate jobs with unique options, how to "upsert" jobs by replacing fields on unique conflict, and how to integration test jobs by draining queues.
 
@@ -301,7 +252,7 @@ Write a test to [verify that the job's `scheduled_at` time changes](https://hexd
   <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
 </div>
 <div style="display: flex;">
-  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/05_daily_earnings.livemd">Daily Earnings</a>
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/05_delivering_a_daily_digest.livemd">Delivering a Daily Digest</a>
   <i class="ri-arrow-right-fill"></i>
 </div>
 </div>

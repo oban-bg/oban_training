@@ -17,14 +17,6 @@ end
 defmodule ChowMojo.Order do
   use Ecto.Schema
 
-  @type t :: %__MODULE__{
-          id: pos_integer(),
-          notes: String.t(),
-          total: integer(),
-          dispatched_at: NaiveDateTime.t(),
-          delivered_at: NaiveDateTime.t()
-        }
-
   schema "orders" do
     field(:notes, :string)
     field(:total, :integer, default: 0)
