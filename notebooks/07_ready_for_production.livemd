@@ -1,0 +1,200 @@
+# Oban Training—Ready for Production
+
+```elixir
+Mix.install([:oban, :postgrex])
+
+Logger.configure(level: :info)
+
+Application.put_env(:chow_mojo, ChowMojo.Repo, url: "postgres://localhost:5432/chow_mojo_dev")
+
+defmodule ChowMojo.Repo do
+  use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
+end
+
+defmodule ChowMojo.ObanCase do
+  use ExUnit.CaseTemplate
+
+  using do
+    quote do
+      use Oban.Testing, repo: ChowMojo.Repo
+    end
+  end
+end
+
+ChowMojo.Repo.start_link()
+```
+
+## 🏅 Goals
+
+<div style="display: flex; align-items: center;">
+
+<img src="images/oban-pro.png" width="256" style="padding: 0 2rem 0 0" />
+
+There's one final hurdle before your training is almost complete—getting ready for production. Throughout the previous exercises we've focused on development and testing environments where job data is short lived and there's no scale to contend with. Now we'll dig into enabling introspection, external observability, and maintaining database health.
+</div>
+
+<!-- livebook:{"break_markdown":true} -->
+
+
+
+## Managing Jobs
+
+Job introspection and uniqueness is built on keeping job rows in the database after they have completed. To prevent the `oban_jobs` table from growing indefinitely, a [`Pruner`](https://hexdocs.pm/oban/Oban.Plugins.Pruner.html) plugin provides out-of-band deletion of `completed`, `cancelled` and `discarded` jobs.
+
+Include `Pruner` in the list of plugins and configure it to retain jobs for 7 days:
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+```elixir
+plugins = [{Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7}]
+```
+
+</details>
+
+```elixir
+# Your turn...
+plugins = []
+
+Oban.Config.validate(plugins: plugins)
+```
+
+During deployment or unexpected node restarts jobs may be left in an `executing` state indefinitely. We call these jobs "orphans", but orphaning isn't a bad thing. It means that the job wasn't lost and it may be retried again when the system comes back online.
+
+There are two mechanisms to mitigate orphans:
+
+1. Increase the [shutdown_grace_period](https://hexdocs.pm/oban/Oban.html#start_link/1-twiddly-options) to allow the system more time to finish executing before shutdown.
+2. Use the [Lifeline plugin](https://hexdocs.pm/oban/Oban.Plugins.Lifeline.html) to automatically move those jobs back to available so they can run again.
+
+Add the Lifeline plugin and configure it to rescue after 5 minutes:
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+```elixir
+plugins = [{Oban.Plugins.Lifeline, rescue_after: :timer.minutes(5)}]
+```
+
+</details>
+
+```elixir
+# Your turn...
+plugins = []
+
+Oban.Config.validate(plugins: plugins)
+```
+
+Demonstrating pruning and rescuing in a notebook environment is tricky, but let's give it a shot. Start an Oban instance that prunes after a short period (e.g. 10s) and rescues after a short period (e.g. 1000ms).
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+```elixir
+Oban.start_link(
+  repo: ChowMojo.Repo,
+  queues: [default: 10],
+  plugins: [{Oban.Plugins.Pruner, max_age: 10}, {Oban.Plugins.Lifeline, rescue_after: 1_000}]
+)
+```
+
+</details>
+
+```elixir
+defmodule SleepyWorker do
+  use Oban.Worker
+
+  def perform(_job) do
+    Process.sleep(:rand.uniform(3000))
+
+    :ok
+  end
+end
+
+# Your turn...
+# Oban.start_link()
+
+0..10
+|> Enum.map(&SleepyWorker.new(%{id: &1}))
+|> Oban.insert_all()
+```
+
+Start evaluating the cell below to watch as jobs complete, get rescued as orphans (erroneously after only 1s), and finally are deleted after 10s. Reevaluate the cell above to seed more jobs if you've missed it.
+
+```elixir
+Oban.Job
+|> ChowMojo.Repo.all()
+|> Enum.map(&Map.take(&1, [:id, :state, :attempt, :completed_at]))
+```
+
+## Telemetry & Logging
+
+Oban heavily utilizes [Telemetry](https://hexdocs.pm/oban/Oban.Telemetry.html#module-examples) for instrumentation at every level. From job execution, plugin activity, through to every database call there's a telemetry event to hook into.
+
+The simplest way to leverage Oban's telemetry usage is through the [default logger](https://hexdocs.pm/oban/Oban.Telemetry.html#attach_default_logger/1). In the test below, attach the default logger and use `perform_job/3` to trigger a few log events (test jobs emit the same telemetry as production). Use [catpure_log/1](https://hexdocs.pm/ex_unit/1.12/ExUnit.CaptureLog.html) to record the log lines and make assertions about them.
+
+<details>
+<summary><i>Use a Hint</i></summary>
+
+```elixir
+Oban.Telemetry.attach_default_logger(encode: false)
+
+logged =
+  capture_log(fn ->
+    perform_job(FakeWorker, %{action: "ok"})
+    perform_job(FakeWorker, %{action: "error"})
+  end)
+
+assert logged =~ "job:start"
+assert logged =~ "job:stop"
+assert logged =~ "job:exception"
+```
+
+</details>
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule ChowMojo.TelemetryLoggingTest do
+  use ChowMojo.ObanCase
+
+  import ExUnit.CaptureLog
+
+  setup do
+    Logger.configure(level: :debug)
+  end
+
+  defmodule FakeWorker do
+    use Oban.Worker
+
+    def perform(%{args: %{"action" => "ok"}}), do: :ok
+    def perform(%{args: %{"action" => "error"}}), do: {:error, :boom}
+  end
+
+  test "logging events triggered by execution jobs" do
+    # Your turn...
+  end
+end
+
+ExUnit.run()
+```
+
+🎉 Congratulations, you've made it! You're ready to build robust background job systems with Oban and run them in production with safeguards and essential introspection.
+
+## ☠️ Extra Challenges
+
+#### Event spelunking
+
+Browse Oban's [Telemetry docs](https://hexdocs.pm/oban/Oban.Telemetry.html) and see what other type of events are available. How many can you identify? Can you guess where they're emitted from and how they could be used? Can you build a generic handler that logs some details about _all_ events?
+
+#### External error reporting
+
+Telemetry events can be used to report issues externally to services like Sentry or AppSignal. Write a handler that sends error notifications to a third party (use a mock, or something that sends a message back to the test process). Choose a subset of the job's fields to include in the notification, and optionally only deliver on the final attempt (`attempt == max_attempts`).
+
+<!-- livebook:{"break_markdown":true} -->
+
+<div style="display: flex; align-items: center; width: 100%; justify-content: space-between; font-size: 1rem; color: #61758a; background-color: #f0f5f9; height: 4rem; padding: 0 1rem; border-radius: 1rem;">
+<div style="display: flex;">
+  <i class="ri-home-fill"></i>
+  <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
+</div>
+</div>

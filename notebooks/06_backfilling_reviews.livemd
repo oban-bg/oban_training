@@ -277,7 +277,7 @@ Create a completion job that monitors the backfill and snoozes until it determin
   <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
 </div>
 <div style="display: flex;">
-  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/06_ready_for_production.livemd">Ready for Production</a>
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/07_ready_for_production.livemd">Ready for Production</a>
   <i class="ri-arrow-right-fill"></i>
 </div>
 </div>
