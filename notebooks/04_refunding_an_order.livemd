@@ -1,7 +1,7 @@
 # Oban Training—Refunding an Order
 
 ```elixir
-Mix.install([:faker, :kino, :oban, :postgrex])
+Mix.install([:oban, :postgrex])
 
 Logger.configure(level: :info)
 
@@ -69,13 +69,13 @@ ChowMojo.Repo.start_link()
 
 <img src="images/red-panda.png" width="256" style="padding: 0 2rem 0 0" />
 
-In this exercise you'll learn how to prevent duplicate jobs with unique options, how to "upsert" jobs by replacing fields on unique conflict, and how to integration test jobs by draining queues.
+In this exercise you'll learn how to prevent duplicate jobs with unique options, how to "upsert" jobs by replacing fields on unique conflict, and how to test jobs by draining queues.
 
 </div>
 
 ## Coordinating Refunds
 
-Inevitably some customers will be unhappy with an order and they'll want to get their money back. Refunds are a delicate operation because money is involved and we want to guarantee there aren't duplicate transactions while keeping the operation in a reliable background job.
+Inevitably, some customers will be unhappy with an order and they'll want to get their money back. Refunds are a delicate operation because money is involved and we want to guarantee there aren't duplicate transactions—while keeping the operation in a reliable background job.
 
 This is where [unique jobs](https://hexdocs.pm/oban/Oban.html#module-unique-jobs) come in.
 
@@ -142,6 +142,8 @@ defmodule ChowMojo.UniqueRefundTest do
   use ChowMojo.ObanCase
 
   setup do
+    start_supervised!({Oban, repo: ChowMojo.Repo, testing: :manual})
+
     :ok
   end
 
@@ -202,7 +204,7 @@ ExUnit.run()
 
 The `unique` option offers controls for which fields are checked (`:worker`, `:queue`, and `:args` by default) and how long a job should be unique for (60 seconds by default). It also has `:states` to control which job states are considered duplicate. By default it includes all states except for `:cancelled` and `:discarded`, which is typically appropriate but undesirable when jobs only have a single attempt.
 
-Configure [uniqueness for all states except `cancelled`](https://hexdocs.pm/oban/Oban.Job.html#states/0) and augment the single refund attempt test above to verify that duplicate refunds can't be inserted after a job's discarded.
+Configure [uniqueness for all states](https://hexdocs.pm/oban/Oban.Job.html#states/0) and augment the single refund attempt test above to verify that duplicate refunds can't be inserted after a job's discarded.
 
 <details>
 <summary><i>Use a hint</i></summary>
@@ -218,12 +220,12 @@ Insert a new a refund job after `drain_queue` in the test above and refute anyth
 refute_enqueued worker: ChowMojo.Refunder
 ```
 
-Get all states with `Oban.Job.states/0` and exclude cancelled:
+Get all states with `Oban.Job.states/0`:
 
 ```elixir
 use Oban.Worker,
   max_attempts: 1,
-  unique: [period: :infinity, keys: [:id], states: Oban.Job.states() -- [:cancelled]]
+  unique: [period: :infinity, keys: [:id], states: Oban.Job.states()]
 ```
 
 </details>
@@ -238,7 +240,7 @@ Use [retry_job/1,2](https://hexdocs.pm/oban/Oban.html#retry_job/2) or [retry_all
 
 #### Debouncing with replace
 
-Sometimes customers are hasty and click to refund before they've written a reason. To compensate for unpredictable customers schedule refunds for 10 minutes after they're requested and use [replace](https://hexdocs.pm/oban/Oban.html#module-unique-jobs) to reschedule farther in the future.
+Sometimes customers are hasty and click to refund before they've written a reason. To compensate for unpredictable customers, schedule refunds for 10 minutes after they're requested and use [replace](https://hexdocs.pm/oban/Oban.html#module-unique-jobs) to reschedule farther in the future.
 
 The `replace` option can only be used when building a job, not when defining the worker. That means you must pass it as an option to `Refunder.new/2`, _or_ override the `Refunder.new/2` callback function to automatically inject `replace` options.
 
