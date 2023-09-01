@@ -13,7 +13,7 @@
 
 ## Sections
 
-### [📓 Why Oban?](./notebooks/introduction.livemd)
+### [📓 Why Oban?](./notebooks/00_introduction.livemd)
 
 * Where we convince you that using Oban is a good idea
 * Not really. It's where we'll give a high level overview of the architecture
@@ -63,8 +63,7 @@
 
 ### [📓 Ready for Production](./notebooks/07_ready_for_production.livemd)
 
-* Logging and instrumenting with Telemetry
 * Pruning older jobs
 * Rescuing unexpectedly stopped jobs
+* Logging and instrumenting with Telemetry
 * Reporting errors
-* Troubleshooting
