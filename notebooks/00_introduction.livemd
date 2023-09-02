@@ -1,0 +1,132 @@
+# Oban Training—Introduction
+
+## The Pitch
+
+<div style="display: flex; align-items: center;">
+
+<img src="images/oban-oss.png" width="256" style="padding: 0 2rem 0 0" />
+
+Oban is a background job system built on modern PostgreSQL and SQLite3 with the primary goals of reliability, consistency and observability.
+</div>
+
+## Why?
+
+#### What are background jobs?
+
+Computation that is performed asynchronously because it is slow, resource intensive, fragile, or must be resilient to errors.
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Sure. But this is Elixir, why do we need something else to run background jobs?
+
+* We have Task.async or even Task.Supervisor.async_nolink?!
+* How do you control the number of jobs running at once?
+* How do you recover from errors and retry?
+* What if the node shuts down while your task is running?
+* What if the job needs to run in a minute, or an hour?
+* How can you see what jobs are running?
+* To coordinate all those technicalities and requirements we need a system.
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Oban is a background job system
+
+* There were (and are) other job processors for Elixir
+* Some are in memory, some in mnesia, others in redis or rabbit mq, and even some built on postgres
+* Those systems handle some of the requirements we just talked about (retrying for failures, scheduling in the future)
+* They treat jobs as ephemeral data—once a job has ran it disappears forever
+  Oban is different because it treats jobs as persistent data
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Guiding principals
+
+* **Persistent** — Never lose a job
+* **Reliable** — Never crash the host
+* **Observable** — Expose system activity at all levels
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Secondary goals
+
+* Distributed execution and horizontal scaling without distributed Erlang
+* Deep modules with simple interfaces
+* Batteries included while staying extensible
+
+## Glossary
+
+#### Node
+
+A "node" is a BEAM host for one or more Oban instances. Nodes don't need to be clustered, but they must have unique names and connect to the same PostgreSQL database.
+
+![Nodes](images/named_nodes.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Instance
+
+An Oban supervision tree is called an "instance," and applications can have multiple instances as long as they have a unique name (e.g. Oban.A, Oban.B, Oban.C)
+
+![Instances](images/multiple_instances.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Queue
+
+Oban segments jobs into named "queues", each of which runs a configurable number of concurrent jobs. Every queue's jobs live in the same database table.
+
+![Queue](images/separate_queues.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Worker
+
+A "worker" module performs one-off tasks called "jobs". The worker's `perform/1` function receives a job with arguments and executes an application's business logic.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyApp.OnboardWorker do
+  use Oban.Worker
+
+  @impl Oban.Worker
+  def perform(%{args: %{"user_id" => user_id}}) do
+    user_id
+    |> MyApp.fetch_user()
+    |> MyApp.onboard_user()
+  end
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Job
+
+An Oban "job" wraps up the queue name, worker, arguments, state, and other options into a serializable struct (and Ecto schema) persisted as rows in the `oban_jobs` table.
+
+![Jobs](images/jobs_table.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### States
+
+Jobs flow through "states" indicating their place in a finite state machine. They start inserted or scheduled, transition to executing, then to an end state, or back to retryable if there are retries available.
+
+![States](images/oban_state_diagram.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+That's all the terminology for now. On to the exercises!
+
+<!-- livebook:{"break_markdown":true} -->
+
+<div style="display: flex; align-items: center; width: 100%; justify-content: space-between; font-size: 1rem; color: #61758a; background-color: #f0f5f9; height: 4rem; padding: 0 1rem; border-radius: 1rem;">
+<div style="display: flex;">
+  <i class="ri-home-fill"></i>
+  <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
+</div>
+<div style="display: flex;">
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/01_up_and_running.livemd">Up and Running</a>
+  <i class="ri-arrow-right-fill"></i>
+</div>
+</div>
