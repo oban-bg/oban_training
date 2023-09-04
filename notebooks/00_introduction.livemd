@@ -34,22 +34,22 @@ Computation that is performed asynchronously because it is slow, resource intens
 * There were (and are) other job processors for Elixir
 * Some are in memory, some in mnesia, others in redis or rabbit mq, and even some built on postgres
 * Those systems handle some of the requirements we just talked about (retrying for failures, scheduling in the future)
-* They treat jobs as ephemeral data—once a job has ran it disappears forever
-  Oban is different because it treats jobs as persistent data
+* They treat jobs as ephemeral data—once a job runs, it disappears forever
+* Oban is different because it treats jobs as persistent data
 
 <!-- livebook:{"break_markdown":true} -->
 
 #### Guiding principals
 
-* **Persistent** — Never lose a job
-* **Reliable** — Never crash the host
+* **Persistent** — Retaining jobs between restarts
+* **Reliable** — Never lose a job
 * **Observable** — Expose system activity at all levels
 
 <!-- livebook:{"break_markdown":true} -->
 
 #### Secondary goals
 
-* Distributed execution and horizontal scaling without distributed Erlang
+* Distributed execution and horizontal scaling
 * Deep modules with simple interfaces
 * Batteries included while staying extensible
 
@@ -79,6 +79,14 @@ Oban segments jobs into named "queues", each of which runs a configurable number
 
 <!-- livebook:{"break_markdown":true} -->
 
+#### Job
+
+An Oban "job" wraps up the queue name, worker, arguments, state, and other options into a serializable struct (and Ecto schema) persisted as rows in the `oban_jobs` table.
+
+![Jobs](images/jobs_table.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
 #### Worker
 
 A "worker" module performs one-off tasks called "jobs". The worker's `perform/1` function receives a job with arguments and executes an application's business logic.
@@ -97,14 +105,6 @@ defmodule MyApp.OnboardWorker do
   end
 end
 ```
-
-<!-- livebook:{"break_markdown":true} -->
-
-#### Job
-
-An Oban "job" wraps up the queue name, worker, arguments, state, and other options into a serializable struct (and Ecto schema) persisted as rows in the `oban_jobs` table.
-
-![Jobs](images/jobs_table.png)
 
 <!-- livebook:{"break_markdown":true} -->
 
