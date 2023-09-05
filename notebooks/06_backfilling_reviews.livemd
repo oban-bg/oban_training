@@ -136,7 +136,7 @@ defmodule ChowMojo.SentimentAnalyzer do
 end
 ```
 
-As new reviews are submitted we'll analyze them, but we need to retroactively process all of the old jobs. Create an `enqueue_backfill/0` function that queries `ChowMojo.Review` for records with `null` sentiment columns. Then build a new `ChowMojo.SentimentAnalyzer` changeset from each of those records and use [`Oban.insert_all/1`](https://hexdocs.pm/oban/Oban.html#insert_all/3) to enqueue them all at once.
+As new reviews are submitted we'll analyze them, but we need to retroactively process all of the old reviews. Create an `enqueue_backfill/0` function that queries `ChowMojo.Review` for records with `null` sentiment columns. Then build a new `ChowMojo.SentimentAnalyzer` changeset from each of those records and use [`Oban.insert_all/1`](https://hexdocs.pm/oban/Oban.html#insert_all/3) to enqueue them all at once.
 
 <details>
 <summary><i>Use a Hint</i></summary>
