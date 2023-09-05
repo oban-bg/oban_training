@@ -5,7 +5,10 @@ Mix.install([:faker, :kino, :oban, :postgrex])
 
 Logger.configure(level: :info)
 
-Application.put_env(:chow_mojo, ChowMojo.Repo, url: "postgres://localhost:5432/chow_mojo_dev")
+Application.put_env(:chow_mojo, ChowMojo.Repo,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  url: "postgres://localhost:5432/chow_mojo_dev"
+)
 
 defmodule ChowMojo.Repo do
   use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
@@ -127,7 +130,7 @@ Thus far we've inserted jobs manually or as part of an externally triggered func
 
 ChowMojo restaurant owners would like to know how many orders they fulfilled and how much they earned each day. That's a perfect fit for background jobs like we've written before, so let's whip up a new `DailyDigest` worker.
 
-The twist is that the new worker only receives empty `args` and fetches _all_ restaurants. Use `ChowMojo.all_active_restaurants/0` and `ChowMojo.deliver_daily_digest/1` to accomplish delivery.
+The twist is that the new worker only receives empty `args` and fetches _all_ restaurants. Define a `perform/1` function that ignores args (or the entire job), then use `ChowMojo.all_active_restaurants/0` to fetch all restaurants, then call `ChowMojo.deliver_daily_digest/1` on each restaurant to accomplish delivery.
 
 <details>
 <summary><i>Use a Hint</i></summary>
@@ -287,7 +290,7 @@ Delivering all of the digest emails from a single queue is risky because a singl
   <a style="display: flex; color: #61758a; margin-left: 1rem;" href="../start.livemd">Home</a>
 </div>
 <div style="display: flex;">
-  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/05_backfilling_reviews.livemd">Backfilling Reviews</a>
+  <a style="display: flex; color: #61758a; margin-right: 1rem;" href="../notebooks/06_backfilling_reviews.livemd">Backfilling Reviews</a>
   <i class="ri-arrow-right-fill"></i>
 </div>
 </div>
