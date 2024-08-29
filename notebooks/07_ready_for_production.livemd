@@ -30,7 +30,7 @@ ChowMojo.Repo.start_link()
 
 <img src="images/oban-pro.png" width="256" style="padding: 0 2rem 0 0" />
 
-There's one final hurdle before your training is almost complete—getting ready for production. Throughout the previous exercises we've focused on development and testing environments where job data is short lived and there's no scale to contend with. Now we'll dig into enabling introspection, external observability, and maintaining database health.
+There's one final hurdle before your training is complete—getting ready for production. Throughout the previous exercises we've focused on development and testing environments where job data is short lived and there's no scale to contend with. Now we'll dig into enabling introspection, external observability, and maintaining database health.
 </div>
 
 <!-- livebook:{"break_markdown":true} -->
@@ -59,7 +59,7 @@ plugins = []
 Oban.Config.validate(plugins: plugins)
 ```
 
-During deployment or unexpected node restarts jobs may be left in an `executing` state indefinitely. We call these jobs "orphans", but orphaning isn't a bad thing. It means that the job wasn't lost and it may be retried again when the system comes back online.
+During deployment or unexpected node restarts, jobs may be left in an `executing` state indefinitely. We call these jobs "orphans", but orphaning isn't a bad thing. It means that the job wasn't lost and it may be retried again when the system comes back online.
 
 There are two mechanisms to mitigate orphans:
 
@@ -128,7 +128,7 @@ Oban.Job
 
 ## Telemetry & Logging
 
-Oban heavily utilizes [Telemetry](https://hexdocs.pm/oban/Oban.Telemetry.html#module-examples) for instrumentation at every level. From job execution, plugin activity, through to every database call there's a telemetry event to hook into.
+Oban heavily utilizes [Telemetry](https://hexdocs.pm/oban/Oban.Telemetry.html) for instrumentation at every level. From job execution, plugin activity, through to every database call there's a telemetry event to hook into.
 
 The simplest way to leverage Oban's telemetry usage is through the [default logger](https://hexdocs.pm/oban/Oban.Telemetry.html#attach_default_logger/1). In the test below, attach the default logger and use `perform_job/3` to trigger a few log events (test jobs emit the same telemetry as production). Use [catpure_log/1](https://hexdocs.pm/ex_unit/1.12/ExUnit.CaptureLog.html) to record the log lines and make assertions about them.
 
