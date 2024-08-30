@@ -1,3 +1,5 @@
+<!-- livebook:{"file_entries":[{"name":"unicorn.png","type":"attachment"}]} -->
+
 # Oban Training—Delivering a Daily Digest
 
 ```elixir
@@ -120,7 +122,7 @@ Ecto.Migrator.run(ChowMojo.Repo, [{3, AddRestaurantOwners}], :up, all: true)
 
 <div style="display: flex; align-items: center;">
 
-<img src="images/unicorn.png" width="256" style="padding: 0 2rem 0 0" />
+<img src="files/unicorn.png" width="256" style="padding: 0 2rem 0 0" />
 
 Thus far we've inserted jobs manually or as part of an externally triggered function. In this exercise we'll look at inserting jobs automatically on a schedule, the role of plugins in Oban, and how to manipulate queues at runtime.
 

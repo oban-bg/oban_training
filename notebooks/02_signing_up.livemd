@@ -1,3 +1,5 @@
+<!-- livebook:{"file_entries":[{"name":"frog.png","type":"attachment"}]} -->
+
 # Oban Training—Signing Up
 
 ```elixir
@@ -70,7 +72,7 @@ Ecto.Adapters.SQL.Sandbox.mode(ChowMojo.Repo, :manual)
 
 <div style="display: flex; align-items: center;">
 
-<img src="images/frog.png" width="256" style="padding: 0 2rem 0 0" />
+<img src="files/frog.png" width="256" style="padding: 0 2rem 0 0" />
 
 In this exercise you'll create a job that delivers follow-up email(s) in the background after a new user signs up. Pushing email delivery into the background makes delivery more reliable due to error handling and retries with backoff.
 

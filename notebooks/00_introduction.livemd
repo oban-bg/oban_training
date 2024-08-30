@@ -1,10 +1,12 @@
+<!-- livebook:{"file_entries":[{"name":"oban-oss.png","type":"attachment"}]} -->
+
 # Oban Training—Introduction
 
 ## The Pitch
 
 <div style="display: flex; align-items: center;">
 
-<img src="images/oban-oss.png" width="256" style="padding: 0 2rem 0 0" />
+<img src="files/oban-oss.png" width="256" style="padding: 0 2rem 0 0" />
 
 Oban is a background job system built on modern PostgreSQL and SQLite3 with the primary goals of reliability, consistency and observability.
 </div>

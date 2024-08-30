@@ -1,3 +1,5 @@
+<!-- livebook:{"file_entries":[{"name":"red-panda.png","type":"attachment"}]} -->
+
 # Oban Training—Refunding an Order
 
 ```elixir
@@ -67,7 +69,7 @@ ChowMojo.Repo.start_link()
 
 <div style="display: flex; align-items: center;">
 
-<img src="images/red-panda.png" width="256" style="padding: 0 2rem 0 0" />
+<img src="files/red-panda.png" width="256" style="padding: 0 2rem 0 0" />
 
 In this exercise you'll learn how to prevent duplicate jobs with unique options, how to "upsert" jobs by replacing fields on unique conflict, and how to test jobs by draining queues.
 

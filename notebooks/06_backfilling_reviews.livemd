@@ -1,3 +1,5 @@
+<!-- livebook:{"file_entries":[{"name":"iguana.png","type":"attachment"}]} -->
+
 # Oban Training — Backfilling Reviews
 
 ```elixir
@@ -102,7 +104,7 @@ Ecto.Migrator.run(ChowMojo.Repo, [{4, AddRatings}], :up, all: true)
 
 <div style="display: flex; align-items: center;">
 
-<img src="images/iguana.png" width="256" style="padding: 0 2rem 0 0" />
+<img src="files/iguana.png" width="256" style="padding: 0 2rem 0 0" />
 
 Until now we've worked with one job at a time. In this exercise we'll learn about the nuances of inserting multiple jobs at once, how to deprioritize less essential jobs, and how to compose jobs together using introspection at runtime.
 

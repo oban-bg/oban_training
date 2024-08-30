@@ -1,3 +1,5 @@
+<!-- livebook:{"file_entries":[{"name":"oban-pro.png","type":"attachment"}]} -->
+
 # Oban Training—Ready for Production
 
 ```elixir
@@ -28,7 +30,7 @@ ChowMojo.Repo.start_link()
 
 <div style="display: flex; align-items: center;">
 
-<img src="images/oban-pro.png" width="256" style="padding: 0 2rem 0 0" />
+<img src="files/oban-pro.png" width="256" style="padding: 0 2rem 0 0" />
 
 There's one final hurdle before your training is complete—getting ready for production. Throughout the previous exercises we've focused on development and testing environments where job data is short lived and there's no scale to contend with. Now we'll dig into enabling introspection, external observability, and maintaining database health.
 </div>
