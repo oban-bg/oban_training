@@ -1,4 +1,4 @@
-<!-- livebook:{"file_entries":[{"name":"oban-oss.png","type":"attachment"}]} -->
+<!-- livebook:{"file_entries":[{"name":"jobs_table.png","type":"attachment"},{"name":"multiple_instances.png","type":"attachment"},{"name":"named_nodes.png","type":"attachment"},{"name":"oban-oss.png","type":"attachment"},{"name":"oban_state_diagram.png","type":"attachment"},{"name":"separate_queues.png","type":"attachment"}]} -->
 
 # Oban Training—Introduction
 
@@ -61,7 +61,7 @@ Computation that is performed asynchronously because it is slow, resource intens
 
 A "node" is a BEAM host for one or more Oban instances. Nodes don't need to be clustered, but they must have unique names and connect to the same PostgreSQL database.
 
-![Nodes](images/named_nodes.png)
+![Nodes](files/named_nodes.png)
 
 <!-- livebook:{"break_markdown":true} -->
 
@@ -69,7 +69,7 @@ A "node" is a BEAM host for one or more Oban instances. Nodes don't need to be c
 
 An Oban supervision tree is called an "instance," and applications can have multiple instances as long as they have a unique name (e.g. Oban.A, Oban.B, Oban.C)
 
-![Instances](images/multiple_instances.png)
+![Instances](files/multiple_instances.png)
 
 <!-- livebook:{"break_markdown":true} -->
 
@@ -77,7 +77,7 @@ An Oban supervision tree is called an "instance," and applications can have mult
 
 Oban segments jobs into named "queues", each of which runs a configurable number of concurrent jobs. Every queue's jobs live in the same database table.
 
-![Queue](images/separate_queues.png)
+![Queue](files/separate_queues.png)
 
 <!-- livebook:{"break_markdown":true} -->
 
@@ -85,7 +85,7 @@ Oban segments jobs into named "queues", each of which runs a configurable number
 
 An Oban "job" wraps up the queue name, worker, arguments, state, and other options into a serializable struct (and Ecto schema) persisted as rows in the `oban_jobs` table.
 
-![Jobs](images/jobs_table.png)
+![Jobs](files/jobs_table.png)
 
 <!-- livebook:{"break_markdown":true} -->
 
@@ -114,7 +114,7 @@ end
 
 Jobs flow through "states" indicating their place in a finite state machine. They start inserted or scheduled, transition to executing, then to an end state, or back to retryable if there are retries available.
 
-![States](images/oban_state_diagram.png)
+![States](files/oban_state_diagram.png)
 
 <!-- livebook:{"break_markdown":true} -->
 
