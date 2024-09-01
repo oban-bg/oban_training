@@ -236,7 +236,7 @@ assert_enqueued worker: ChowMojo.SentimentAnalyzer, priority: 3
 Then modify `enqueue_backfill`:
 
 ```elixir
-|> Enum.map(&ChowMojo.SentimentAnalyzer.new(%{id: &1}), priority: 3)
+|> Enum.map(&ChowMojo.SentimentAnalyzer.new(%{id: &1}, priority: 3))
 ```
 
 </details>
