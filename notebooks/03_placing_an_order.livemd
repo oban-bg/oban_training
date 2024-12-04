@@ -294,6 +294,8 @@ def perform(%Job{args: %{"id" => order_id}}) do
       {:error, 429, _} -> {:snooze, 10}
       {:error, status, body} -> {:error, {status, body}}
     end
+  else
+    {state, msg} -> {state, msg}
   end
 end
 
