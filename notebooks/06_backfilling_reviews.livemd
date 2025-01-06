@@ -112,7 +112,7 @@ Until now we've worked with one job at a time. In this exercise we'll learn abou
 
 ## Sentiment Analysis for Reviews
 
-ChowMojo customers frequently leave reviews after ordering from a restaurant. We'd like to use sentiment analysis to gauge how people feel about a restaurant. New reviews will be analyzed as their submitted, but there is an extensive backlog of reviews for us to process.
+ChowMojo customers frequently leave reviews after ordering from a restaurant. We'd like to use sentiment analysis to gauge how people feel about a restaurant. New reviews will be analyzed as they're submitted, but there is an extensive backlog of reviews for us to process.
 
 Create a standard worker that receives a review id, fetches the review with `ChowMojo.get_review`, and then uses `ChowMojo.analyze_sentiment` to handle the rest.
 
