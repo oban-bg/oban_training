@@ -333,7 +333,7 @@ Implement a `backoff/1` callback and write a [test that exercises that backoff](
 
 #### Limit execution time with a timeout
 
-Unless a [timeout is configured](https://hexdocs.pm/oban/Oban.Worker.html#module-limiting-execution-time) jobs may execute indefinitely. That's a problem when our system has tight deadlines or external systems are unresponsive, i.e. sometimes restaurant notifications hang forever.
+Unless a [timeout is configured](https://hexdocs.pm/oban/Oban.Worker.html#module-execution-timeout) jobs may execute indefinitely. That's a problem when our system has tight deadlines or external systems are unresponsive, i.e. sometimes restaurant notifications hang forever.
 
 Implement a `timeout/1` callback to limit execution time and try writing a `perform_job/3` test that exercises the timeout.
 
