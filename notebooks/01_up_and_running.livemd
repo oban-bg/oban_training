@@ -3,7 +3,7 @@
 # Oban Training—Up and Running
 
 ```elixir
-Mix.install([:kino, :oban, :postgrex, :jason])
+Mix.install([:jason, :kino, :oban, :postgrex])
 ```
 
 ## 🏅 Goals
