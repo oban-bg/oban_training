@@ -3,7 +3,7 @@
 # Oban Training—Signing Up
 
 ```elixir
-Mix.install([:faker, :kino, :oban, :postgrex])
+Mix.install([:faker, :jason, :kino, :oban, :postgrex])
 
 Logger.configure(level: :info)
 

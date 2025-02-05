@@ -3,7 +3,7 @@
 # Oban Training—Ready for Production
 
 ```elixir
-Mix.install([:oban, :postgrex])
+Mix.install([:jason, :oban, :postgrex])
 
 Logger.configure(level: :info)
 
