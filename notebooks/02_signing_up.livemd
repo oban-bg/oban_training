@@ -194,7 +194,7 @@ ExUnit.run()
 
 Once the `WelcomeWorker` job executes successfully you'll see one test pass with zero failures. You've exercised the full welcome flow within the test process, without touching the database! Now we'll write another test using the helpers provided by `Oban.Testing` to assert that the job is enqueued in the database properly.
 
-In this test the testing mode is already set to `:manual`. [Setup the testing helpers](https://hexdocs.pm/oban/testing.html#setup-testing-helpers), then use [`assert_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#module-using-in-tests) to verify the job is enqueued.
+In this test the testing mode is already set to `:manual`. [Setup the testing helpers](https://hexdocs.pm/oban/testing.html#setup-testing-helpers), then use [`assert_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#module-usage) to verify the job is enqueued.
 
 <details>
 <summary><i>Use a Hint</i></summary>
@@ -241,7 +241,7 @@ Create another worker and deliver a follow-up job one day in the future after us
 
 1. Use the `schedule_in` option to delay job execution until a later time
 2. Try using the `{:days, N}` shorthand rather than calculating using raw seconds
-3. Write a test to verify the email is [scheduled for delivery in the future](https://hexdocs.pm/oban/Oban.Testing.html#module-matching-scheduled-jobs-and-timestamps)
+3. Write a test to verify the email is [scheduled for delivery in the future](https://hexdocs.pm/oban/Oban.Testing.html#module-matching-timestamps)
 
 #### Enqueue in a transaction
 

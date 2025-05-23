@@ -211,7 +211,7 @@ Jobs usually execute in order they're scheduled with the `id` as a secondary sor
 | 3   | 2023-09-03 00:00:02 |
 | 4   | 2023-09-03 00:00:02 |
 
-We say "usually" because it's possible to [change a job's priority](https://hexdocs.pm/oban/Oban.html#module-prioritizing-jobs) so that it runs before or after other jobs, regardless of when they were scheduled. The default priority is 0, and jobs with a higher value have a lower priority (like `nice` for OS processes). Rewriting the table above so that only job `4` is priority 0:
+We say "usually" because it's possible to [change a job's priority](https://hexdocs.pm/oban/Oban.Worker.html#module-prioritizing-jobs) so that it runs before or after other jobs, regardless of when they were scheduled. The default priority is 0, and jobs with a higher value have a lower priority (like `nice` for OS processes). Rewriting the table above so that only job `4` is priority 0:
 
 | priority | id  | scheduled_at        |
 | -------- | --- | ------------------- |
