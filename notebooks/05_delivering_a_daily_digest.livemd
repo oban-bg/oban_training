@@ -194,9 +194,9 @@ ExUnit.run()
 
 With confidence that the worker delivers digests to the correct restaurants, we're ready to automate delivery on a schedule.
 
-The ideal way to [schedule periodic jobs](https://hexdocs.pm/oban/Oban.html#module-periodic-jobs) is with the [Cron plugin](https://hexdocs.pm/oban/Oban.Plugins.Cron.html). In Oban, plugins are processes (GenServers) that insert, update, or delete jobs autonomously based on some configuration. We'll look at other plugins and their role in production systems later on.
+The ideal way to [schedule periodic jobs](https://hexdocs.pm/oban/periodic_jobs.html) is with the [Cron plugin](https://hexdocs.pm/oban/Oban.Plugins.Cron.html). In Oban, plugins are processes (GenServers) that insert, update, or delete jobs autonomously based on some configuration. We'll look at other plugins and their role in production systems later on.
 
-For now, let's define options for an Oban instance with a Cron plugin that schedules a `DailyDigest` job every minute and starts an `email` [queue in the paused state](https://hexdocs.pm/oban/Oban.html#module-configuring-queues). Note that we're scheduling jobs frequently for testing purposes, in reality we'd want to deliver digest emails once a day.
+For now, let's define options for an Oban instance with a Cron plugin that schedules a `DailyDigest` job every minute and starts an `email` [queue in the paused state](https://hexdocs.pm/oban/defining_queues.html). Note that we're scheduling jobs frequently for testing purposes, in reality we'd want to deliver digest emails once a day.
 
 At this point we're only validating the config, not starting the instance.
 

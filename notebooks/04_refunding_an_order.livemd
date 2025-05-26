@@ -79,7 +79,7 @@ In this exercise you'll learn how to prevent duplicate jobs with unique options,
 
 Inevitably, some customers will be unhappy with an order and they'll want to get their money back. Refunds are a delicate operation because money is involved and we want to guarantee there aren't duplicate transactions—while keeping the operation in a reliable background job.
 
-This is where [unique jobs](https://hexdocs.pm/oban/Oban.html#module-unique-jobs) come in.
+This is where [unique jobs](https://hexdocs.pm/oban/unique_jobs.html) come in.
 
 To begin, define a `Refunder` worker that takes an order id and a refund reason as args, fetches the order, and calls `ChowMojo.refund_order/2` to refund the money.
 
@@ -111,7 +111,7 @@ So far we have an ordinary worker like the ones we've written in previous exerci
 
 Modify the `Refunder` worker to be unique forever and write a test that verifies only one refund job may exist for an order, even with different reasons.
 
-An `Oban` instance is started for `:manual` testing where jobs are inserted into the database rather than executing immediately. Your tests should insert multiple jobs with the same order id, and maybe the same reason, then use [`all_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#all_enqueued/2) to ensure there aren't duplicates.
+An `Oban` instance is started for `:manual` testing where jobs are inserted into the database rather than executing immediately. Your tests should insert multiple jobs with the same order id, and maybe the same reason, then use [`all_enqueued/1`](https://hexdocs.pm/oban/Oban.Testing.html#all_enqueued/1) to ensure there aren't duplicates.
 
 <details>
 <summary><i>Use a hint</i></summary>
@@ -242,11 +242,11 @@ Use [retry_job/1,2](https://hexdocs.pm/oban/Oban.html#retry_job/2) or [retry_all
 
 #### Debouncing with replace
 
-Sometimes customers are hasty and click to refund before they've written a reason. To compensate for unpredictable customers, schedule refunds for 10 minutes after they're requested and use [replace](https://hexdocs.pm/oban/Oban.html#module-unique-jobs) to reschedule farther in the future.
+Sometimes customers are hasty and click to refund before they've written a reason. To compensate for unpredictable customers, schedule refunds for 10 minutes after they're requested and use [replace](https://hexdocs.pm/oban/unique_jobs.html#replacing-values) to reschedule farther in the future.
 
 The `replace` option can only be used when building a job, not when defining the worker. That means you must pass it as an option to `Refunder.new/2`, _or_ override the `Refunder.new/2` callback function to automatically inject `replace` options.
 
-Write a test to [verify that the job's `scheduled_at` time changes](https://hexdocs.pm/oban/Oban.Testing.html#module-matching-scheduled-jobs-and-timestamps).
+Write a test to [verify that the job's `scheduled_at` time changes](https://hexdocs.pm/oban/Oban.Testing.html#module-matching-timestamps).
 
 <!-- livebook:{"break_markdown":true} -->
 

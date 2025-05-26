@@ -192,7 +192,7 @@ Use `psql` (Postgres console) or another database explorer tool to look at the t
 
 #### Inspect the running Oban supervision tree
 
-Look at which processes are running under the `Oban` instance's supervision tree either through beam tooling, the registry, or browsing the [source code](https://github.com/sorentwo/oban/blob/main/lib/oban.ex#L257).
+Look at which processes are running under the `Oban` instance's supervision tree either through beam tooling, the registry, or browsing the [source code](https://github.com/sorentwo/oban/blob/main/lib/oban.ex#L483).
 
 1. What are the direct children of the Oban supervisor?
 2. Which process handles running queues?
