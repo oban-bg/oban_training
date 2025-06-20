@@ -7,7 +7,7 @@ Mix.install([:jason, :oban, :postgrex])
 
 Logger.configure(level: :info)
 
-Application.put_env(:chow_mojo, ChowMojo.Repo, url: "postgres://localhost:5432/chow_mojo_dev")
+Application.put_env(:chow_mojo, ChowMojo.Repo, url: "postgres://postgres:postgres@localhost:5432/chow_mojo_dev")
 
 defmodule ChowMojo.Repo do
   use Ecto.Repo, otp_app: :chow_mojo, adapter: Ecto.Adapters.Postgres
