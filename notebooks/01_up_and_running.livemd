@@ -25,7 +25,7 @@ Typically, you'd [install Oban into your application](https://hexdocs.pm/oban/in
 Oban requires a Postgres (or SQlite) and a functional `Ecto.Repo`. For now, we'll define a basic repo with minimal configuration:
 
 ```elixir
-Application.put_env(:myapp, MyApp.Repo, url: "postgres://localhost:5432/chow_mojo_dev")
+Application.put_env(:myapp, MyApp.Repo, url: "postgres://postgres:postgres@localhost:5432/chow_mojo_dev")
 
 defmodule MyApp.Repo do
   use Ecto.Repo, adapter: Ecto.Adapters.Postgres, otp_app: :myapp
