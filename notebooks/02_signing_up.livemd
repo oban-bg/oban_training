@@ -9,7 +9,7 @@ Logger.configure(level: :info)
 
 Application.put_env(:chow_mojo, ChowMojo.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
-  url: "postgres://localhost:5432/chow_mojo_dev"
+  url: "postgres://postgres:postgres@localhost:5432/chow_mojo_dev"
 )
 
 defmodule ChowMojo.Repo do
