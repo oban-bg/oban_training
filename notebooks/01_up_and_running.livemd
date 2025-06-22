@@ -22,6 +22,8 @@ Typically, you'd [install Oban into your application](https://hexdocs.pm/oban/in
 
 ## Migrations
 
+⚠️ **Warning:** Do not forget to add in livebook secrets your postgres database username and password as `LB_` envs: `LB_USERNAME` and `LB_PASSWORD`.
+
 Oban requires a Postgres (or SQlite) and a functional `Ecto.Repo`. For now, we'll define a basic repo with minimal configuration:
 
 ```elixir
