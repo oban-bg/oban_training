@@ -41,7 +41,7 @@ use `Oban.Migration` functions to define `up` and `down`:
 
 ```elixir
 def up do
-  Oban.Migration.up(version: 11)
+  Oban.Migration.up(version: 12)
 end
 
 def down do
